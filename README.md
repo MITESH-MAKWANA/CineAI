@@ -88,8 +88,8 @@ python ml/train_sentiment.py
 uvicorn main:app --reload --port 8000
 ```
 
-✅ Backend will be available at: **http://localhost:8000**  
-📖 API Docs (Swagger): **http://localhost:8000/docs**
+✅ Backend will be available at: https://cineai-ifyr.onrender.com
+📖 API Docs (Swagger): https://cineai-ifyr.onrender.com/docs
 
 ---
 
@@ -109,7 +109,7 @@ cp .env.example .env        # Mac/Linux
 npm run dev
 ```
 
-✅ Frontend will be available at: **http://localhost:5173**
+✅ Frontend will be available at: https://cineai-frontend.vercel.app
 
 ---
 
