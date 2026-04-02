@@ -9,7 +9,8 @@ from database import create_all_tables
 from routes import auth, movies, recommendations, sentiment, watchlist, favorites
 from routes import csv_movies
 
-ALLOWED_ORIGINS = ["*"]  # Dev: allow all origins (update for production)
+import os
+ALLOWED_ORIGINS = os.getenv("ALLOWED_ORIGINS", "*").split(",")
 
 
 
