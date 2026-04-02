@@ -3,7 +3,7 @@
 > **Smart recommendations. Better entertainment.**  
 > A full-stack, production-ready OTT-style platform with ML-powered movie recommendations and NLP sentiment analysis.
 
-![CineAI Banner]([[https://image.tmdb.org/t/p/w1280/placeholder.jpg](https://chatgpt.com/backend-api/estuary/content?id=file_00000000d69c720b9b495fb7619a946a&ts=493101&p=fs&cid=1&sig=bd59bce23cbf3b7c8e41076cafbc9f1b269c35971c69187dae085e01ccbd16e9&v=0)](https://chatgpt.com/s/m_69cedfab2d488191ba10e6f41dd7ba81))
+![CineAI Banner](C:\Users\makwa\CineAI)
 
 ---
 
