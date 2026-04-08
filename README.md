@@ -3,7 +3,7 @@
 > **Smart recommendations. Better entertainment.**  
 > A full-stack, production-ready OTT-style platform with ML-powered movie recommendations and NLP sentiment analysis.
 
-![CineAI Banner](https://image.tmdb.org/t/p/w1280/placeholder.jpg)
+
 
 ---
 
@@ -88,8 +88,8 @@ python ml/train_sentiment.py
 uvicorn main:app --reload --port 8000
 ```
 
-✅ Backend will be available at: **http://localhost:8000**  
-📖 API Docs (Swagger): **http://localhost:8000/docs**
+✅ Backend will be available at: https://cineai-ifyr.onrender.com
+📖 API Docs (Swagger): https://cineai-ifyr.onrender.com/docs
 
 ---
 
@@ -109,7 +109,7 @@ cp .env.example .env        # Mac/Linux
 npm run dev
 ```
 
-✅ Frontend will be available at: **http://localhost:5173**
+✅ Frontend will be available at: https://cineai-frontend.vercel.app
 
 ---
 

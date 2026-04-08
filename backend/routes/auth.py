@@ -203,7 +203,7 @@ def forgot_password(data: ForgotPasswordRequest, db: Session = Depends(get_db)):
 # ── Admin Export (protected by secret key) ────────────────────────────────────
 import os
 from fastapi import Query
-from models.watchlist import Watchlist
+from models.watchlist import WatchlistItem, FavoriteItem
 from models.review import Review
 
 ADMIN_SECRET = os.getenv("ADMIN_SECRET", "cineai-admin-2024")
@@ -214,15 +214,10 @@ def admin_export(key: str = Query(...), db: Session = Depends(get_db)):
     if key != ADMIN_SECRET:
         raise HTTPException(status_code=403, detail="Invalid admin key")
 
-    users = db.query(User).all()
-    try:
-        watchlist = db.query(Watchlist).all()
-    except Exception:
-        watchlist = []
-    try:
-        reviews = db.query(Review).all()
-    except Exception:
-        reviews = []
+    users     = db.query(User).all()
+    watchlist = db.query(WatchlistItem).all()
+    favorites = db.query(FavoriteItem).all()
+    reviews   = db.query(Review).all()
 
     return {
         "total_users": len(users),
@@ -239,8 +234,13 @@ def admin_export(key: str = Query(...), db: Session = Depends(get_db)):
         ],
         "total_watchlist": len(watchlist),
         "watchlist": [
-            {"id": w.id, "user_id": w.user_id, "movie_id": w.movie_id}
+            {"id": w.id, "user_id": w.user_id, "movie_id": w.movie_id, "movie_title": w.movie_title}
             for w in watchlist
+        ],
+        "total_favorites": len(favorites),
+        "favorites": [
+            {"id": f.id, "user_id": f.user_id, "movie_id": f.movie_id, "movie_title": f.movie_title}
+            for f in favorites
         ],
         "total_reviews": len(reviews),
         "reviews": [
@@ -248,6 +248,7 @@ def admin_export(key: str = Query(...), db: Session = Depends(get_db)):
                 "id": r.id,
                 "user_id": r.user_id,
                 "movie_id": r.movie_id,
+                "movie_title": r.movie_title,
                 "review_text": r.review_text,
                 "sentiment": r.sentiment,
             }
