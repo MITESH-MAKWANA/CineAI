@@ -5,8 +5,8 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse
-from config import APP_NAME, DEBUG
-from database import create_all_tables, get_db
+from config import APP_NAME
+from database import create_all_tables
 from routes import auth, movies, recommendations, sentiment, watchlist, favorites
 from routes import csv_movies
 import os
@@ -52,7 +52,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Mount routers
 app.include_router(auth.router)
 app.include_router(movies.router)
 app.include_router(recommendations.router)
@@ -72,54 +71,53 @@ def health():
     return {"status": "healthy", "app": APP_NAME}
 
 
-# ── Admin Dashboard ────────────────────────────────────────────────────────────
-@app.get("/admin", response_class=HTMLResponse, tags=["Admin"])
-def admin_dashboard(key: str = Query(default="")):
-    # ── No key → show login form ──────────────────────────────────────────────
-    if not key:
-        return HTMLResponse("""<!DOCTYPE html>
-<html lang="en"><head><meta charset="UTF-8">
-<title>CineAI Admin</title>
+# ── Admin Login page HTML ──────────────────────────────────────────────────────
+def _login_page(msg=""):
+    return HTMLResponse(f"""<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"><title>CineAI Admin</title>
 <style>
-*{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'Segoe UI',sans-serif;background:#0f0f1a;color:#e2e8f0;
-     display:flex;align-items:center;justify-content:center;min-height:100vh}
-.card{background:#1e1e3a;border:1px solid #2d2d50;border-radius:16px;padding:40px;
-      text-align:center;width:360px}
-h1{font-size:24px;margin-bottom:8px}
-p{color:#94a3b8;font-size:14px;margin-bottom:24px}
-input{width:100%;padding:12px 16px;background:#0f0f1a;border:1px solid #4c1d95;
-      border-radius:8px;color:#e2e8f0;font-size:15px;margin-bottom:16px;outline:none}
-input:focus{border-color:#a78bfa}
-button{width:100%;padding:12px;background:linear-gradient(135deg,#6c3ef4,#e040fb);
-       color:white;border:none;border-radius:8px;font-size:15px;font-weight:600;cursor:pointer}
-button:hover{opacity:0.9}
+*{{box-sizing:border-box;margin:0;padding:0}}
+body{{font-family:'Segoe UI',sans-serif;background:#0f0f1a;color:#e2e8f0;
+     display:flex;align-items:center;justify-content:center;min-height:100vh}}
+.card{{background:#1e1e3a;border:1px solid #2d2d50;border-radius:16px;padding:48px 40px;
+      text-align:center;width:380px;box-shadow:0 20px 60px rgba(0,0,0,.5)}}
+.logo{{font-size:44px;margin-bottom:12px}}
+h1{{font-size:22px;font-weight:700;margin-bottom:6px}}
+.sub{{color:#94a3b8;font-size:13px;margin-bottom:28px;min-height:20px}}
+.err{{color:#f87171;font-size:13px}}
+input{{width:100%;padding:13px 16px;background:#0f0f1a;border:1px solid #4c1d95;
+      border-radius:10px;color:#e2e8f0;font-size:15px;margin-bottom:16px;outline:none;
+      letter-spacing:2px}}
+input:focus{{border-color:#a78bfa;box-shadow:0 0 0 3px rgba(167,139,250,.15)}}
+button{{width:100%;padding:13px;background:linear-gradient(135deg,#6c3ef4,#e040fb);
+       color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:600;
+       cursor:pointer;transition:.2s}}
+button:hover{{opacity:.88;transform:translateY(-1px)}}
 </style></head><body>
 <div class="card">
-  <h1>🎬 CineAI Admin</h1>
-  <p>Enter your admin key to access the database viewer</p>
+  <div class="logo">🎬</div>
+  <h1>CineAI Admin Panel</h1>
+  <p class="sub">{msg if msg else 'Live database viewer &mdash; restricted access'}</p>
   <form onsubmit="go(event)">
     <input type="password" id="k" placeholder="Enter admin key..." autofocus/>
     <button type="submit">🔓 Open Dashboard</button>
   </form>
 </div>
 <script>
-function go(e){e.preventDefault();
+function go(e){{e.preventDefault();
   var k=document.getElementById('k').value.trim();
   if(k) window.location.href='/admin?key='+encodeURIComponent(k);
-}
+}}
 </script></body></html>""")
 
-    # ── Wrong key → show error ────────────────────────────────────────────────
+
+# ── Admin Dashboard ────────────────────────────────────────────────────────────
+@app.get("/admin", response_class=HTMLResponse, tags=["Admin"])
+def admin_dashboard(key: str = Query(default="")):
+    if not key:
+        return _login_page()
     if key != ADMIN_SECRET:
-        return HTMLResponse("""<!DOCTYPE html>
-<html><head><title>CineAI Admin</title>
-<style>body{font-family:'Segoe UI',sans-serif;background:#0f0f1a;color:#e2e8f0;
-display:flex;align-items:center;justify-content:center;min-height:100vh;text-align:center}
-a{color:#a78bfa}</style></head><body>
-<div><h2>❌ Invalid admin key</h2>
-<p style="color:#94a3b8;margin-top:12px">
-<a href="/admin">← Try again</a></p></div></body></html>""", status_code=403)
+        return _login_page('<span class="err">❌ Wrong key — try again</span>')
 
     from sqlalchemy.orm import Session
     from database import SessionLocal
@@ -136,82 +134,205 @@ a{color:#a78bfa}</style></head><body>
     finally:
         db.close()
 
-    def make_table(title, headers, rows):
-        header_html = "".join(f"<th>{h}</th>" for h in headers)
-        rows_html = "".join(
-            "<tr>" + "".join(f"<td>{c}</td>" for c in row) + "</tr>"
-            for row in rows
+    def make_rows(data_rows):
+        if not data_rows:
+            return '<tr><td colspan="10" class="empty">No records yet</td></tr>'
+        return "".join(
+            "<tr>" + "".join(f"<td>{c}</td>" for c in r) + "</tr>"
+            for r in data_rows
         )
+
+    def make_panel(tid, headers, data_rows, search_hint):
+        head = "".join(f"<th>{h}</th>" for h in headers)
+        body = make_rows(data_rows)
+        n    = len(data_rows)
+        cols = list(range(len(headers)))   # search all columns
         return f"""
-        <div class="section">
-            <h2>{title} <span class="badge">{len(rows)}</span></h2>
-            <div class="table-wrap">
-                <table>
-                    <thead><tr>{header_html}</tr></thead>
-                    <tbody>{rows_html if rows else '<tr><td colspan="' + str(len(headers)) + '" class="empty">No data yet</td></tr>'}</tbody>
-                </table>
-            </div>
-        </div>"""
+<div class="panel" id="panel-{tid}">
+  <div class="toolbar">
+    <div class="search-wrap">
+      <span class="search-icon">🔍</span>
+      <input class="search-box" id="srch-{tid}" type="text"
+             placeholder="Search by {search_hint}..."
+             oninput="doFilter('{tid}',{cols})"/>
+    </div>
+    <span class="rec-count" id="cnt-{tid}">{n} record{'s' if n!=1 else ''}</span>
+  </div>
+  <div class="tbl-wrap">
+    <table>
+      <thead><tr>{head}</tr></thead>
+      <tbody id="body-{tid}">{body}</tbody>
+    </table>
+  </div>
+</div>"""
 
-    users_table = make_table("👤 Users", ["ID","Username","Email","Age","Gender","Genres"],
-        [(u.id, u.username, u.email, u.age or "-", u.gender or "-", u.favorite_genres or "-") for u in users])
+    u_panel = make_panel("users",
+        ["ID","Username","Email","Age","Gender","Genres"],
+        [(u.id, u.username, u.email, u.age or "—", u.gender or "—",
+          u.favorite_genres or "—") for u in users],
+        "username, email, age, gender, genres")
 
-    watch_table = make_table("📋 Watchlist", ["ID","User ID","Movie ID","Movie Title"],
-        [(w.id, w.user_id, w.movie_id, w.movie_title) for w in watchlist])
+    w_panel = make_panel("watchlist",
+        ["ID","User ID","Movie ID","Movie Title"],
+        [(w.id, w.user_id, w.movie_id, w.movie_title) for w in watchlist],
+        "movie title")
 
-    fav_table = make_table("❤️ Favorites", ["ID","User ID","Movie ID","Movie Title"],
-        [(f.id, f.user_id, f.movie_id, f.movie_title) for f in favorites])
+    f_panel = make_panel("favorites",
+        ["ID","User ID","Movie ID","Movie Title"],
+        [(f.id, f.user_id, f.movie_id, f.movie_title) for f in favorites],
+        "movie title")
 
-    rev_table = make_table("💬 Reviews", ["ID","User ID","Movie","Review","Sentiment"],
-        [(r.id, r.user_id, r.movie_title, r.review_text[:60]+"...", r.sentiment) for r in reviews])
+    r_panel = make_panel("reviews",
+        ["ID","User ID","Movie Title","Review","Sentiment"],
+        [(r.id, r.user_id, r.movie_title,
+          (r.review_text[:60]+"…") if len(r.review_text) > 60 else r.review_text,
+          f'<span class="sent {r.sentiment}">{r.sentiment or "—"}</span>')
+         for r in reviews],
+        "movie title, sentiment")
 
     return HTMLResponse(f"""<!DOCTYPE html>
-<html lang="en">
-<head>
+<html lang="en"><head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>CineAI Admin Dashboard</title>
 <style>
-  * {{ box-sizing: border-box; margin: 0; padding: 0; }}
-  body {{ font-family: 'Segoe UI', sans-serif; background: #0f0f1a; color: #e2e8f0; min-height: 100vh; }}
-  header {{ background: linear-gradient(135deg,#6c3ef4,#e040fb); padding: 24px 32px; }}
-  header h1 {{ font-size: 28px; font-weight: 700; }}
-  header p  {{ opacity: 0.85; font-size: 14px; margin-top: 4px; }}
-  .stats {{ display: flex; gap: 16px; padding: 24px 32px; flex-wrap: wrap; }}
-  .stat {{ background: #1e1e3a; border-radius: 12px; padding: 16px 24px; flex: 1; min-width: 140px; text-align: center; border: 1px solid #2d2d50; }}
-  .stat .num {{ font-size: 32px; font-weight: 700; color: #a78bfa; }}
-  .stat .lbl {{ font-size: 13px; color: #94a3b8; margin-top: 4px; }}
-  .section {{ margin: 0 32px 32px; }}
-  .section h2 {{ font-size: 18px; margin-bottom: 12px; display: flex; align-items: center; gap: 10px; }}
-  .badge {{ background: #6c3ef4; border-radius: 20px; padding: 2px 10px; font-size: 13px; }}
-  .table-wrap {{ overflow-x: auto; border-radius: 12px; border: 1px solid #2d2d50; }}
-  table {{ width: 100%; border-collapse: collapse; font-size: 14px; }}
-  thead {{ background: #1e1e3a; }}
-  th {{ padding: 12px 16px; text-align: left; color: #a78bfa; font-weight: 600; white-space: nowrap; }}
-  td {{ padding: 11px 16px; border-top: 1px solid #2d2d50; color: #cbd5e1; }}
-  tr:hover td {{ background: #1e1e3a; }}
-  .empty {{ text-align: center; color: #64748b; padding: 24px; }}
-  footer {{ text-align: center; padding: 24px; color: #475569; font-size: 13px; }}
-  .refresh {{ float: right; background: #6c3ef4; color: white; border: none; padding: 8px 16px;
-              border-radius: 8px; cursor: pointer; font-size: 13px; text-decoration: none; }}
-</style>
-</head>
-<body>
+*{{box-sizing:border-box;margin:0;padding:0}}
+body{{font-family:'Segoe UI',system-ui,sans-serif;background:#0d0d1a;color:#e2e8f0;min-height:100vh}}
+/* Header */
+header{{background:linear-gradient(120deg,#4c1d95,#6d28d9,#7e22ce);
+        padding:16px 28px;display:flex;align-items:center;
+        justify-content:space-between;box-shadow:0 4px 24px rgba(0,0,0,.5)}}
+.h-title{{font-size:20px;font-weight:700;display:flex;align-items:center;gap:10px}}
+.h-sub{{font-size:12px;opacity:.7;margin-top:3px}}
+.h-actions{{display:flex;gap:10px;align-items:center}}
+.pill{{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);
+       border-radius:30px;padding:5px 14px;font-size:12px;font-weight:600}}
+.btn{{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.18);
+      color:#fff;padding:7px 14px;border-radius:8px;text-decoration:none;
+      font-size:13px;transition:.15s;cursor:pointer}}
+.btn:hover{{background:rgba(255,255,255,.2)}}
+/* Stat cards */
+.stats{{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;padding:20px 28px}}
+.stat{{background:#13132a;border:1px solid #252545;border-radius:14px;
+       padding:18px 20px;text-align:center;cursor:pointer;transition:.2s;
+       position:relative;overflow:hidden}}
+.stat::after{{content:'';position:absolute;bottom:0;left:0;right:0;height:3px;
+              background:linear-gradient(90deg,#7c3aed,#db2777);opacity:0}}
+.stat.active,.stat:hover{{border-color:#7c3aed;background:#18183a}}
+.stat.active::after,.stat:hover::after{{opacity:1}}
+.stat .num{{font-size:36px;font-weight:800;color:#a78bfa;line-height:1}}
+.stat .lbl{{font-size:12px;color:#64748b;margin-top:6px;font-weight:500;text-transform:uppercase;letter-spacing:.5px}}
+/* Tabs */
+.tabs{{display:flex;padding:0 28px;border-bottom:1px solid #1e1e3f;gap:4px}}
+.tab{{padding:12px 20px;font-size:14px;font-weight:500;color:#64748b;
+      border-bottom:2px solid transparent;cursor:pointer;transition:.15s;
+      border-radius:4px 4px 0 0;user-select:none}}
+.tab:hover{{color:#c4b5fd;background:#ffffff08}}
+.tab.active{{color:#c4b5fd;border-bottom-color:#7c3aed;background:#ffffff05}}
+/* Panel */
+.panel{{display:none;padding:20px 28px 36px}}
+.panel.active{{display:block}}
+/* Toolbar */
+.toolbar{{display:flex;align-items:center;gap:12px;margin-bottom:16px}}
+.search-wrap{{position:relative;flex:1;max-width:480px}}
+.search-icon{{position:absolute;left:13px;top:50%;transform:translateY(-50%);
+              font-size:14px;pointer-events:none}}
+.search-box{{width:100%;padding:10px 14px 10px 38px;background:#13132a;
+             border:1px solid #252545;border-radius:10px;color:#e2e8f0;
+             font-size:14px;outline:none;transition:.2s}}
+.search-box:focus{{border-color:#7c3aed;background:#18183a;
+                   box-shadow:0 0 0 3px rgba(124,58,237,.2)}}
+.rec-count{{font-size:13px;color:#475569;margin-left:auto;white-space:nowrap}}
+/* Table */
+.tbl-wrap{{overflow-x:auto;border-radius:12px;border:1px solid #1e1e3f}}
+table{{width:100%;border-collapse:collapse;font-size:13.5px}}
+thead{{background:#0d0d20}}
+th{{padding:12px 16px;text-align:left;color:#7c3aed;font-weight:600;
+    font-size:11px;text-transform:uppercase;letter-spacing:.6px;
+    white-space:nowrap;position:sticky;top:0;background:#0d0d20}}
+td{{padding:11px 16px;border-top:1px solid #1a1a35;color:#cbd5e1;
+    white-space:nowrap;max-width:280px;overflow:hidden;text-overflow:ellipsis}}
+tr:hover td{{background:#16163a}}
+tr.hidden{{display:none}}
+.empty{{text-align:center;color:#374151;padding:40px;font-size:14px}}
+/* Sentiment */
+.sent{{border-radius:20px;padding:3px 10px;font-size:11px;font-weight:700;
+       text-transform:uppercase;letter-spacing:.4px}}
+.sent.positive{{background:rgba(16,185,129,.12);color:#34d399;border:1px solid rgba(16,185,129,.2)}}
+.sent.negative{{background:rgba(239,68,68,.12);color:#f87171;border:1px solid rgba(239,68,68,.2)}}
+.sent.neutral{{background:rgba(148,163,184,.1);color:#94a3b8;border:1px solid rgba(148,163,184,.15)}}
+footer{{text-align:center;padding:20px;color:#1e293b;font-size:12px;
+        border-top:1px solid #131325;margin-top:8px}}
+@media(max-width:640px){{
+  .stats{{grid-template-columns:repeat(2,1fr)}}
+  .toolbar{{flex-wrap:wrap}}
+}}
+</style></head><body>
+
 <header>
-  <h1>🎬 CineAI Admin Dashboard</h1>
-  <p>Live database viewer — PostgreSQL
-     <a class="refresh" href="/admin?key={key}">🔄 Refresh</a>
-  </p>
+  <div>
+    <div class="h-title">🎬 CineAI Admin Dashboard</div>
+    <div class="h-sub">Live PostgreSQL viewer — admin only</div>
+  </div>
+  <div class="h-actions">
+    <span class="pill">🔒 Admin</span>
+    <a class="btn" href="/admin?key={key}">🔄 Refresh</a>
+  </div>
 </header>
+
 <div class="stats">
-  <div class="stat"><div class="num">{len(users)}</div><div class="lbl">👤 Users</div></div>
-  <div class="stat"><div class="num">{len(watchlist)}</div><div class="lbl">📋 Watchlist</div></div>
-  <div class="stat"><div class="num">{len(favorites)}</div><div class="lbl">❤️ Favorites</div></div>
-  <div class="stat"><div class="num">{len(reviews)}</div><div class="lbl">💬 Reviews</div></div>
+  <div class="stat active" id="st-users"     onclick="sw('users')">
+    <div class="num">{len(users)}</div><div class="lbl">👤 Users</div>
+  </div>
+  <div class="stat" id="st-watchlist"  onclick="sw('watchlist')">
+    <div class="num">{len(watchlist)}</div><div class="lbl">📋 Watchlist</div>
+  </div>
+  <div class="stat" id="st-favorites"  onclick="sw('favorites')">
+    <div class="num">{len(favorites)}</div><div class="lbl">❤️ Favorites</div>
+  </div>
+  <div class="stat" id="st-reviews"    onclick="sw('reviews')">
+    <div class="num">{len(reviews)}</div><div class="lbl">💬 Reviews</div>
+  </div>
 </div>
-{users_table}
-{watch_table}
-{fav_table}
-{rev_table}
-<footer>CineAI Admin Dashboard • Protected by secret key • Data from PostgreSQL</footer>
+
+<div class="tabs">
+  <div class="tab active" id="tb-users"     onclick="sw('users')">👤 Users</div>
+  <div class="tab"        id="tb-watchlist" onclick="sw('watchlist')">📋 Watchlist</div>
+  <div class="tab"        id="tb-favorites" onclick="sw('favorites')">❤️ Favorites</div>
+  <div class="tab"        id="tb-reviews"   onclick="sw('reviews')">💬 Reviews</div>
+</div>
+
+{u_panel}
+{w_panel}
+{f_panel}
+{r_panel}
+
+<footer>CineAI Admin &bull; PostgreSQL &bull; 🔒 Admin Only</footer>
+
+<script>
+var TABS=['users','watchlist','favorites','reviews'];
+function sw(name){{
+  TABS.forEach(function(t){{
+    ['panel-','tb-','st-'].forEach(function(p){{
+      var el=document.getElementById(p+t);
+      if(el) el.classList.toggle('active',t===name);
+    }});
+  }});
+}}
+function doFilter(tid,cols){{
+  var q=document.getElementById('srch-'+tid).value.toLowerCase().trim();
+  var rows=document.querySelectorAll('#body-'+tid+' tr');
+  var vis=0;
+  rows.forEach(function(r){{
+    var tds=r.querySelectorAll('td');
+    var ok=!q||cols.some(function(c){{
+      return tds[c]&&tds[c].textContent.toLowerCase().includes(q);
+    }});
+    r.classList.toggle('hidden',!ok);
+    if(ok)vis++;
+  }});
+  var el=document.getElementById('cnt-'+tid);
+  if(el)el.textContent=(q?vis+' of '+rows.length:rows.length)+' record'+(rows.length!==1?'s':'');
+}}
+</script>
 </body></html>""")
