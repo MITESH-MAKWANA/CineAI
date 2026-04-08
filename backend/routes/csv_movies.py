@@ -107,11 +107,11 @@ def top_rated(page: int = 1):
 
 
 @router.get("/movies/by-genre")
-def by_genre(genre: str, page: int = 1):
+def by_genre(genre: str, page: int = 1, per_page: int = 1000):
     _load()
     gl = genre.lower().strip()
     filtered = [m for m in _MOVIES if any(g.lower() == gl for g in m["genres"])]
-    return _paginate(filtered, page)
+    return _paginate(filtered, page, min(per_page, 1000))
 
 
 @router.get("/movies/search")
@@ -124,7 +124,7 @@ def search(
     max_rating: Optional[float] = None,
     language: Optional[str] = None,
     page: int = 1,
-    per_page: int = 40,
+    per_page: int = 1000,
 ):
     _load()
     results = _MOVIES[:]

@@ -42,7 +42,7 @@ const getPoster = (path) => {
 }
 
 // ─── Shared movie fetching logic ──────────────────────────────────────
-export async function fetchMoodMovies(currentVibe, targetVibe, selectedGenres = []) {
+export async function fetchMoodMovies(currentVibe, targetVibe, selectedGenres = [], limit = 1000) {
   const vibeGenres1 = VIBE_TO_GENRES[currentVibe]  || []
   const vibeGenres2 = VIBE_TO_GENRES[targetVibe]   || []
   const merged      = [...new Set([...vibeGenres1, ...vibeGenres2])]
@@ -51,9 +51,9 @@ export async function fetchMoodMovies(currentVibe, targetVibe, selectedGenres = 
   const genresToUse = selectedGenres.length > 0 ? selectedGenres : merged
   const results = []
 
-  for (const genre of genresToUse.slice(0, 3)) {
+  for (const genre of genresToUse.slice(0, 6)) {
     try {
-      const { data } = await api.get('/csv/movies/by-genre', { params: { genre, page: 1, per_page: 20 } })
+      const { data } = await api.get('/csv/movies/by-genre', { params: { genre, page: 1, per_page: 500 } })
       const list = data?.results || data?.movies || (Array.isArray(data) ? data : [])
       results.push(...list)
     } catch { /* skip */ }
@@ -63,7 +63,7 @@ export async function fetchMoodMovies(currentVibe, targetVibe, selectedGenres = 
   const seen = new Set()
   const unique = results.filter(m => { if (seen.has(m.id)) return false; seen.add(m.id); return true })
   unique.sort((a, b) => (b.popularity || 0) - (a.popularity || 0))
-  return unique.slice(0, 12)
+  return unique.slice(0, limit)
 }
 
 // ─── Main Page ────────────────────────────────────────────────────────
@@ -124,7 +124,7 @@ export default function MoodMatch() {
     setLoading(true)
     setStep(4)
     try {
-      const results = await fetchMoodMovies(currentVibe, targetVibe, selectedGenres)
+      const results = await fetchMoodMovies(currentVibe, targetVibe, selectedGenres, 1000)
       setMovies(results)
     } catch { setMovies([]) }
     finally { setLoading(false) }

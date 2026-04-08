@@ -159,7 +159,7 @@ export default function Profile() {
     setMoodLoading(true)
     setMoodSearched(false)
     try {
-      const results = await fetchMoodMovies(vibeId, vibeId, [])
+      const results = await fetchMoodMovies(vibeId, vibeId, [], 300)
       setMoodMovies(results)
       setMoodSearched(true)
     } catch { setMoodMovies([]) }

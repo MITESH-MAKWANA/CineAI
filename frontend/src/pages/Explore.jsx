@@ -188,7 +188,7 @@ export default function Explore() {
     // Re-run the search (triggered by back-button URL change too)
     setSearching(true)
     setSearchResults(null)
-    const apiParams = { per_page: 40 }
+    const apiParams = { per_page: 1000 }
     if (q)      apiParams.query    = q
     if (genre)  apiParams.genre    = genre
     if (year)   { apiParams.year_from = parseInt(year); apiParams.year_to = parseInt(year) }
@@ -227,7 +227,7 @@ export default function Explore() {
 
         <div className="ec-header">
           <h1 className="ec-page-title">🎬 Explore Movies</h1>
-          <p className="ec-page-sub">Discover from 2,000+ movies in our catalogue</p>
+          <p className="ec-page-sub">Discover from 13,150 movies in our catalogue</p>
         </div>
 
         {/* Search bar */}
