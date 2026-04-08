@@ -74,9 +74,52 @@ def health():
 
 # ── Admin Dashboard ────────────────────────────────────────────────────────────
 @app.get("/admin", response_class=HTMLResponse, tags=["Admin"])
-def admin_dashboard(key: str = Query(...)):
+def admin_dashboard(key: str = Query(default="")):
+    # ── No key → show login form ──────────────────────────────────────────────
+    if not key:
+        return HTMLResponse("""<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8">
+<title>CineAI Admin</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',sans-serif;background:#0f0f1a;color:#e2e8f0;
+     display:flex;align-items:center;justify-content:center;min-height:100vh}
+.card{background:#1e1e3a;border:1px solid #2d2d50;border-radius:16px;padding:40px;
+      text-align:center;width:360px}
+h1{font-size:24px;margin-bottom:8px}
+p{color:#94a3b8;font-size:14px;margin-bottom:24px}
+input{width:100%;padding:12px 16px;background:#0f0f1a;border:1px solid #4c1d95;
+      border-radius:8px;color:#e2e8f0;font-size:15px;margin-bottom:16px;outline:none}
+input:focus{border-color:#a78bfa}
+button{width:100%;padding:12px;background:linear-gradient(135deg,#6c3ef4,#e040fb);
+       color:white;border:none;border-radius:8px;font-size:15px;font-weight:600;cursor:pointer}
+button:hover{opacity:0.9}
+</style></head><body>
+<div class="card">
+  <h1>🎬 CineAI Admin</h1>
+  <p>Enter your admin key to access the database viewer</p>
+  <form onsubmit="go(event)">
+    <input type="password" id="k" placeholder="Enter admin key..." autofocus/>
+    <button type="submit">🔓 Open Dashboard</button>
+  </form>
+</div>
+<script>
+function go(e){e.preventDefault();
+  var k=document.getElementById('k').value.trim();
+  if(k) window.location.href='/admin?key='+encodeURIComponent(k);
+}
+</script></body></html>""")
+
+    # ── Wrong key → show error ────────────────────────────────────────────────
     if key != ADMIN_SECRET:
-        return HTMLResponse("<h2 style='color:red;font-family:sans-serif'>❌ Invalid admin key</h2>", status_code=403)
+        return HTMLResponse("""<!DOCTYPE html>
+<html><head><title>CineAI Admin</title>
+<style>body{font-family:'Segoe UI',sans-serif;background:#0f0f1a;color:#e2e8f0;
+display:flex;align-items:center;justify-content:center;min-height:100vh;text-align:center}
+a{color:#a78bfa}</style></head><body>
+<div><h2>❌ Invalid admin key</h2>
+<p style="color:#94a3b8;margin-top:12px">
+<a href="/admin">← Try again</a></p></div></body></html>""", status_code=403)
 
     from sqlalchemy.orm import Session
     from database import SessionLocal
