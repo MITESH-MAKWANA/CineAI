@@ -10,8 +10,9 @@ import joblib
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 
-DATASET_PATH = os.path.join(os.path.dirname(__file__), 'dataset', 'movies.csv')
-MODEL_PATH = os.path.join(os.path.dirname(__file__), 'recommender_model.joblib')
+DATASET_PATH = os.path.join(os.path.dirname(__file__), 'dataset', 'tmdbmovies.csv')
+MODEL_PATH   = os.path.join(os.path.dirname(__file__), 'recommender_model.joblib')
+MAX_MOVIES   = 3000
 
 
 def train():
@@ -19,10 +20,14 @@ def train():
         print(f'❌ Dataset not found at {DATASET_PATH}')
         return
 
-    df = pd.read_csv(DATASET_PATH)
-    df = df.dropna(subset=['tmdb_id', 'overview'])
+    df = pd.read_csv(DATASET_PATH, encoding='utf-8')
+    df = df.dropna(subset=['id', 'overview'])
+    if 'vote_count' in df.columns:
+        df = df.sort_values('vote_count', ascending=False).head(MAX_MOVIES)
+    else:
+        df = df.head(MAX_MOVIES)
 
-    print(f'📊 Dataset size: {len(df)} movies')
+    print(f'Dataset: tmdbmovies.csv — using top {len(df)} movies')
 
     df['soup'] = (
         df['overview'].fillna('') + ' ' +
@@ -39,7 +44,7 @@ def train():
     tfidf_matrix = tfidf.fit_transform(df['soup'])
     sim_matrix = cosine_similarity(tfidf_matrix, tfidf_matrix)
 
-    movie_ids = df['tmdb_id'].astype(int).tolist()
+    movie_ids = df['id'].astype(int).tolist()
 
     data = {'movie_ids': movie_ids, 'similarity_matrix': sim_matrix}
     joblib.dump(data, MODEL_PATH)

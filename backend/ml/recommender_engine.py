@@ -1,6 +1,7 @@
 """
 Content-Based Movie Recommender
 TF-IDF on movie overview + genres + keywords -> Cosine Similarity matrix
+Dataset: tmdbmovies.csv (13,150 movies)
 """
 import os
 import joblib
@@ -10,7 +11,8 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 
 MODEL_PATH = os.path.join(os.path.dirname(__file__), "recommender_model.joblib")
-DATASET_PATH = os.path.join(os.path.dirname(__file__), "dataset", "movies.csv")
+DATASET_PATH = os.path.join(os.path.dirname(__file__), "dataset", "tmdbmovies.csv")
+MAX_MOVIES = 3000  # Limit for Render free tier (512 MB RAM)
 
 
 class RecommenderEngine:
@@ -37,8 +39,13 @@ class RecommenderEngine:
             print("[WARN] No dataset found for recommendations.")
             return
         try:
-            df = pd.read_csv(DATASET_PATH)
-            df = df.dropna(subset=["tmdb_id", "overview"])
+            df = pd.read_csv(DATASET_PATH, encoding="utf-8")
+            df = df.dropna(subset=["id", "overview"])
+            # Use top movies by vote_count to stay within memory limits
+            if "vote_count" in df.columns:
+                df = df.sort_values("vote_count", ascending=False).head(MAX_MOVIES)
+            else:
+                df = df.head(MAX_MOVIES)
             df["soup"] = (
                 df["overview"].fillna("") + " " +
                 df["genres"].fillna("") + " " +
@@ -47,11 +54,11 @@ class RecommenderEngine:
             tfidf = TfidfVectorizer(stop_words="english", max_features=5000)
             tfidf_matrix = tfidf.fit_transform(df["soup"])
             sim = cosine_similarity(tfidf_matrix, tfidf_matrix)
-            self.movie_ids = df["tmdb_id"].astype(int).tolist()
+            self.movie_ids = df["id"].astype(int).tolist()
             self.similarity_matrix = sim
             self.id_to_idx = {mid: i for i, mid in enumerate(self.movie_ids)}
             joblib.dump({"movie_ids": self.movie_ids, "similarity_matrix": sim}, MODEL_PATH)
-            print(f"[OK] Recommender trained & saved: {len(self.movie_ids)} movies.")
+            print(f"[OK] Recommender trained & saved: {len(self.movie_ids)} movies from tmdbmovies.csv")
         except Exception as e:
             print(f"[WARN] Training failed: {e}")
 
