@@ -199,3 +199,58 @@ def forgot_password(data: ForgotPasswordRequest, db: Session = Depends(get_db)):
     # In production, send reset email here. For now we acknowledge receipt.
     return {"message": "If this email is registered, a reset link has been sent."}
 
+
+# ── Admin Export (protected by secret key) ────────────────────────────────────
+import os
+from fastapi import Query
+from models.watchlist import Watchlist
+from models.review import Review
+
+ADMIN_SECRET = os.getenv("ADMIN_SECRET", "cineai-admin-2024")
+
+@router.get("/admin/export")
+def admin_export(key: str = Query(...), db: Session = Depends(get_db)):
+    """Export all data from the live database as JSON. Protected by ADMIN_SECRET key."""
+    if key != ADMIN_SECRET:
+        raise HTTPException(status_code=403, detail="Invalid admin key")
+
+    users = db.query(User).all()
+    try:
+        watchlist = db.query(Watchlist).all()
+    except Exception:
+        watchlist = []
+    try:
+        reviews = db.query(Review).all()
+    except Exception:
+        reviews = []
+
+    return {
+        "total_users": len(users),
+        "users": [
+            {
+                "id": u.id,
+                "username": u.username,
+                "email": u.email,
+                "age": u.age,
+                "gender": u.gender or "",
+                "favorite_genres": u.favorite_genres or "",
+            }
+            for u in users
+        ],
+        "total_watchlist": len(watchlist),
+        "watchlist": [
+            {"id": w.id, "user_id": w.user_id, "movie_id": w.movie_id}
+            for w in watchlist
+        ],
+        "total_reviews": len(reviews),
+        "reviews": [
+            {
+                "id": r.id,
+                "user_id": r.user_id,
+                "movie_id": r.movie_id,
+                "review_text": r.review_text,
+                "sentiment": r.sentiment,
+            }
+            for r in reviews
+        ],
+    }
