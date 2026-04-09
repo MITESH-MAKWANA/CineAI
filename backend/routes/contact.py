@@ -2,7 +2,7 @@
 Contact Route — Saves messages from the Contact page into PostgreSQL.
 """
 from fastapi import APIRouter, Depends
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from database import SessionLocal
 from models.contact import ContactMessage
