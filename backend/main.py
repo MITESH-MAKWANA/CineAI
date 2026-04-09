@@ -153,6 +153,7 @@ function go(e){e.preventDefault();
     from models.user import User
     from models.watchlist import WatchlistItem, FavoriteItem
     from models.review import Review
+    from models.contact import ContactMessage
 
     db: Session = SessionLocal()
     try:
@@ -160,6 +161,10 @@ function go(e){e.preventDefault();
         watchlist = db.query(WatchlistItem).order_by(WatchlistItem.id).all()
         favorites = db.query(FavoriteItem).order_by(FavoriteItem.id).all()
         reviews   = db.query(Review).order_by(Review.id).all()
+        messages  = db.query(ContactMessage).order_by(ContactMessage.id.desc()).all()
+    except Exception:
+        db.rollback()
+        users, watchlist, favorites, reviews, messages = [], [], [], [], []
     finally:
         db.close()
 
@@ -209,9 +214,16 @@ function go(e){e.preventDefault();
     r_tbl = make_table("reviews",
         ["ID", "User ID", "Movie Title", "Review", "Sentiment"],
         [(r.id, r.user_id, esc(r.movie_title),
-          esc(r.review_text[:70]+"" if len(r.review_text)>70 else r.review_text),
+          esc(r.review_text[:70]+"..." if len(r.review_text)>70 else r.review_text),
           f'<span class="sent {r.sentiment}">{r.sentiment or ""}</span>')
          for r in reviews])
+
+    m_tbl = make_table("messages",
+        ["ID", "Name", "Email", "Subject", "Message", "Date"],
+        [(m.id, esc(m.name), esc(m.email), esc(m.subject or "-"),
+          esc(m.message[:80]+"..." if len(m.message)>80 else m.message),
+          str(m.created_at)[:16] if m.created_at else "-")
+         for m in messages])
 
     return HTMLResponse(f"""<!DOCTYPE html>
 <html lang="en"><head>
@@ -278,10 +290,10 @@ footer{{text-align:center;padding:18px;color:#1e293b;font-size:12px;
 
 <header>
   <div>
-    <div class="ht">CineAI Admin Dashboard</div>
+    <div class="ht">&#128274; CineAI Admin Dashboard</div>
     <div class="hs">Live PostgreSQL database viewer &mdash; admin only</div>
   </div>
-  <span class="pill">Admin</span>
+  <span class="pill">&#128274; Admin</span>
 </header>
 
 <div class="cards">
@@ -297,6 +309,9 @@ footer{{text-align:center;padding:18px;color:#1e293b;font-size:12px;
   <div class="card" id="c-reviews"   onclick="sw('reviews')">
     <div class="n">{len(reviews)}</div><div class="l">Reviews</div>
   </div>
+  <div class="card" id="c-messages"  onclick="sw('messages')">
+    <div class="n">{len(messages)}</div><div class="l">Messages</div>
+  </div>
 </div>
 
 <div class="tabs">
@@ -304,17 +319,19 @@ footer{{text-align:center;padding:18px;color:#1e293b;font-size:12px;
   <div class="tab"        id="tb-watchlist" onclick="sw('watchlist')">Watchlist</div>
   <div class="tab"        id="tb-favorites" onclick="sw('favorites')">Favorites</div>
   <div class="tab"        id="tb-reviews"   onclick="sw('reviews')">Reviews</div>
+  <div class="tab"        id="tb-messages"  onclick="sw('messages')">Messages</div>
 </div>
 
 {u_tbl}
 {w_tbl}
 {f_tbl}
 {r_tbl}
+{m_tbl}
 
-<footer>CineAI Admin Dashboard &bull; PostgreSQL &bull; Admin Only</footer>
+<footer>CineAI Admin Dashboard &bull; PostgreSQL &bull; &#128274; Admin Only</footer>
 
 <script>
-var TABS=['users','watchlist','favorites','reviews'];
+var TABS=['users','watchlist','favorites','reviews','messages'];
 function sw(name){{
   TABS.forEach(function(t){{
     var p=document.getElementById('panel-'+t);

@@ -12,12 +12,22 @@ export default function Contact() {
     e.preventDefault()
     if (!form.name || !form.email || !form.message) return toast.error('Please fill required fields')
     setSending(true)
-    // Simulate send
-    await new Promise(r => setTimeout(r, 1200))
-    toast.success('Message sent! We\'ll get back to you soon.')
-    setForm({ name: '', email: '', subject: '', message: '' })
+    try {
+      const API = import.meta.env.VITE_API_URL || 'https://cineai-ifyr.onrender.com'
+      const res = await fetch(`${API}/contact`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(form),
+      })
+      if (!res.ok) throw new Error('Server error')
+      toast.success("Message sent! We'll get back to you soon.")
+      setForm({ name: '', email: '', subject: '', message: '' })
+    } catch {
+      toast.error('Failed to send. Please try again.')
+    }
     setSending(false)
   }
+
 
   return (
     <div className="contact-page page-wrapper">
