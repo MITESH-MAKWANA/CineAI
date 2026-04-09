@@ -19,7 +19,10 @@ TMDB_IMG        = "https://image.tmdb.org/t/p/w92"
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     print(f"[START] {APP_NAME} API starting up...")
-    create_all_tables()
+    try:
+        create_all_tables()
+    except Exception as e:
+        print(f"[WARN] DB init error (non-fatal): {e}")
     try:
         from ml.sentiment_engine import SentimentEngine
         app.state.sentiment = SentimentEngine()
