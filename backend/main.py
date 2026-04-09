@@ -141,14 +141,22 @@ button{width:100%;padding:14px;background:linear-gradient(135deg,#6c3ef4,#e040fb
         watchlist = db.query(WatchlistItem).order_by(WatchlistItem.id).all()
         favorites = db.query(FavoriteItem).order_by(FavoriteItem.id).all()
         reviews   = db.query(Review).order_by(Review.id.desc()).all()
-        messages  = db.query(ContactMessage).order_by(ContactMessage.created_at.desc()).all()
 
-        # Analytics
+        # Analytics — wrap in try/except for columns that may not exist yet
         pos_count  = db.query(Review).filter(Review.sentiment == "positive").count()
         neg_count  = db.query(Review).filter(Review.sentiment == "negative").count()
         neu_count  = db.query(Review).filter(Review.sentiment == "neutral").count()
-        unread_msgs = db.query(ContactMessage).filter(ContactMessage.is_read == False).count()
-        banned_count = db.query(User).filter(User.is_banned == True).count()
+        try:
+            messages    = db.query(ContactMessage).order_by(ContactMessage.created_at.desc()).all()
+            unread_msgs = db.query(ContactMessage).filter(ContactMessage.is_read == False).count()
+        except Exception:
+            db.rollback()
+            messages, unread_msgs = [], 0
+        try:
+            banned_count = db.query(User).filter(User.is_banned == True).count()
+        except Exception:
+            db.rollback()
+            banned_count = 0
     finally:
         db.close()
 
