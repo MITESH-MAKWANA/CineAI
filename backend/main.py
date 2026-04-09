@@ -197,32 +197,41 @@ function go(e){e.preventDefault();
   </div>
 </div>"""
 
+    def fmt(dt):
+        """Format datetime to YYYY-MM-DD HH:MM, or '-' if None."""
+        return str(dt)[:16].replace('T', ' ') if dt else "-"
+
     u_tbl = make_table("users",
-        ["ID", "Username", "Email", "Age", "Gender", "Favorite Genres"],
+        ["ID", "Username", "Email", "Age", "Gender", "Favorite Genres", "Registered", "Last Login"],
         [(u.id, esc(u.username), esc(u.email),
           u.age or "", esc(u.gender or ""),
-          esc(u.favorite_genres or "")) for u in users])
+          esc(u.favorite_genres or ""),
+          fmt(u.created_at),
+          fmt(getattr(u, 'last_login', None))) for u in users])
 
     w_tbl = make_table("watchlist",
-        ["ID", "User ID", "Movie ID", "Movie Title"],
-        [(w.id, w.user_id, w.movie_id, esc(w.movie_title)) for w in watchlist])
+        ["ID", "User ID", "Movie ID", "Movie Title", "Added At"],
+        [(w.id, w.user_id, w.movie_id, esc(w.movie_title),
+          fmt(w.added_at)) for w in watchlist])
 
     f_tbl = make_table("favorites",
-        ["ID", "User ID", "Movie ID", "Movie Title"],
-        [(f.id, f.user_id, f.movie_id, esc(f.movie_title)) for f in favorites])
+        ["ID", "User ID", "Movie ID", "Movie Title", "Added At"],
+        [(f.id, f.user_id, f.movie_id, esc(f.movie_title),
+          fmt(f.added_at)) for f in favorites])
 
     r_tbl = make_table("reviews",
-        ["ID", "User ID", "Movie Title", "Review", "Sentiment"],
+        ["ID", "User ID", "Movie Title", "Review", "Sentiment", "Date"],
         [(r.id, r.user_id, esc(r.movie_title),
           esc(r.review_text[:70]+"..." if len(r.review_text)>70 else r.review_text),
-          f'<span class="sent {r.sentiment}">{r.sentiment or ""}</span>')
+          f'<span class="sent {r.sentiment}">{r.sentiment or ""}</span>',
+          fmt(r.created_at))
          for r in reviews])
 
     m_tbl = make_table("messages",
         ["ID", "Name", "Email", "Subject", "Message", "Date"],
         [(m.id, esc(m.name), esc(m.email), esc(m.subject or "-"),
           esc(m.message[:80]+"..." if len(m.message)>80 else m.message),
-          str(m.created_at)[:16] if m.created_at else "-")
+          fmt(m.created_at))
          for m in messages])
 
     return HTMLResponse(f"""<!DOCTYPE html>
