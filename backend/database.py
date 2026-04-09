@@ -32,6 +32,6 @@ def get_db():
 
 def create_all_tables():
     """Create all tables defined in models."""
-    from models import user, watchlist, review  # noqa: F401
+    from models import user, watchlist, review, contact  # noqa: F401
     Base.metadata.create_all(bind=engine)
     print(f"[OK] Database tables created ({_db_url[:30]}...).")
