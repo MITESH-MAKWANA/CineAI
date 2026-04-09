@@ -69,7 +69,7 @@ def health():
     return {"status": "healthy", "app": APP_NAME}
 
 
-# ??&#128274; Admin Dashboard 
+# ??Admin Dashboard 
 @app.get("/admin", response_class=HTMLResponse, tags=["Admin"])
 def admin_dashboard(key: str = Query(default="")):
 
@@ -100,7 +100,7 @@ button{width:100%;padding:13px;background:linear-gradient(135deg,#6c3ef4,#e040fb
   <p>Live database viewer &mdash; admin only</p>
   <form onsubmit="go(event)">
     <input type="password" id="k" placeholder="Enter admin key..." autofocus/>
-    <button type="submit">&#128275; Open Dashboard</button>
+    <button type="submit">Open Dashboard</button>
   </form>
 </div>
 <script>
@@ -137,7 +137,7 @@ button{width:100%;padding:13px;background:linear-gradient(135deg,#6c3ef4,#e040fb
   <p>Please try again with the correct admin key</p>
   <form onsubmit="go(event)">
     <input type="password" id="k" placeholder="Enter admin key..." autofocus/>
-    <button type="submit">&#128275; Try Again</button>
+    <button type="submit">Try Again</button>
   </form>
 </div>
 <script>
@@ -217,7 +217,7 @@ function go(e){e.preventDefault();
 <html lang="en"><head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>&#127921; CineAI Admin Dashboard</title>
+<title>CineAI Admin Dashboard</title>
 <style>
 *{{box-sizing:border-box;margin:0;padding:0}}
 body{{font-family:'Segoe UI',system-ui,sans-serif;background:#0d0d1a;
@@ -278,32 +278,32 @@ footer{{text-align:center;padding:18px;color:#1e293b;font-size:12px;
 
 <header>
   <div>
-    <div class="ht">&#127921; &#127921; CineAI Admin Dashboard</div>
+    <div class="ht">CineAI Admin Dashboard</div>
     <div class="hs">Live PostgreSQL database viewer &mdash; admin only</div>
   </div>
-  <span class="pill">&#128274; Admin</span>
+  <span class="pill">Admin</span>
 </header>
 
 <div class="cards">
   <div class="card active" id="c-users"     onclick="sw('users')">
-    <div class="n">{len(users)}</div><div class="l">&#128100; Users</div>
+    <div class="n">{len(users)}</div><div class="l">Users</div>
   </div>
   <div class="card" id="c-watchlist" onclick="sw('watchlist')">
-    <div class="n">{len(watchlist)}</div><div class="l">&#128203; Watchlist</div>
+    <div class="n">{len(watchlist)}</div><div class="l">Watchlist</div>
   </div>
   <div class="card" id="c-favorites" onclick="sw('favorites')">
-    <div class="n">{len(favorites)}</div><div class="l">&#10084; Favorites</div>
+    <div class="n">{len(favorites)}</div><div class="l">Favorites</div>
   </div>
   <div class="card" id="c-reviews"   onclick="sw('reviews')">
-    <div class="n">{len(reviews)}</div><div class="l">&#128172; Reviews</div>
+    <div class="n">{len(reviews)}</div><div class="l">Reviews</div>
   </div>
 </div>
 
 <div class="tabs">
-  <div class="tab active" id="tb-users"     onclick="sw('users')">&#128100; Users</div>
-  <div class="tab"        id="tb-watchlist" onclick="sw('watchlist')">&#128203; Watchlist</div>
-  <div class="tab"        id="tb-favorites" onclick="sw('favorites')">&#10084; Favorites</div>
-  <div class="tab"        id="tb-reviews"   onclick="sw('reviews')">&#128172; Reviews</div>
+  <div class="tab active" id="tb-users"     onclick="sw('users')">Users</div>
+  <div class="tab"        id="tb-watchlist" onclick="sw('watchlist')">Watchlist</div>
+  <div class="tab"        id="tb-favorites" onclick="sw('favorites')">Favorites</div>
+  <div class="tab"        id="tb-reviews"   onclick="sw('reviews')">Reviews</div>
 </div>
 
 {u_tbl}
@@ -311,7 +311,7 @@ footer{{text-align:center;padding:18px;color:#1e293b;font-size:12px;
 {f_tbl}
 {r_tbl}
 
-<footer>&#127921; CineAI Admin Dashboard &bull; PostgreSQL &bull; &#128274; Admin Only</footer>
+<footer>CineAI Admin Dashboard &bull; PostgreSQL &bull; Admin Only</footer>
 
 <script>
 var TABS=['users','watchlist','favorites','reviews'];
