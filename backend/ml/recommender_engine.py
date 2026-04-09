@@ -12,7 +12,7 @@ from sklearn.metrics.pairwise import cosine_similarity
 
 MODEL_PATH = os.path.join(os.path.dirname(__file__), "recommender_model.joblib")
 DATASET_PATH = os.path.join(os.path.dirname(__file__), "dataset", "tmdbmovies.csv")
-MAX_MOVIES = 3000  # Limit for Render free tier (512 MB RAM)
+MAX_MOVIES = 500  # Limit for Render free tier (512 MB RAM)
 
 
 class RecommenderEngine:

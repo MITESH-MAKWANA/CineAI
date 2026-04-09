@@ -26,12 +26,8 @@ async def lifespan(app: FastAPI):
         print("[OK] Sentiment engine ready.")
     except Exception as e:
         print(f"[WARN] Sentiment engine startup: {e}")
-    try:
-        from ml.recommender_engine import RecommenderEngine
-        app.state.recommender = RecommenderEngine()
-        print("[OK] Recommender engine ready.")
-    except Exception as e:
-        print(f"[WARN] Recommender engine startup: {e}")
+    # Recommender loads lazily on first request to avoid startup timeout
+    print("[INFO] Recommender will load on first request.")
     yield
     print(f"[STOP] {APP_NAME} shutting down.")
 
