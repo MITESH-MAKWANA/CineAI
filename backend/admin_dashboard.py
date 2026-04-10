@@ -40,7 +40,7 @@ DASHBOARD_HTML = """<!DOCTYPE html>
 <html lang="en"><head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>CineAI Admin Dashboard</title>
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js" onerror="window._chartFailed=true"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:'Segoe UI',system-ui,sans-serif;background:#080812;color:#e2e8f0;min-height:100vh}
@@ -388,32 +388,40 @@ function startPolling(){
 
 // ── Render all tabs ────────────────────────────────────────────────────
 function renderAll(){
-  var s=D.stats;
-  // Cards
-  q('st-users').textContent=s.users;
-  q('st-active').textContent=s.active+' active';
-  q('st-wl').textContent=s.watchlist;
-  q('st-fav').textContent=s.favorites;
-  q('st-rev').textContent=s.reviews;
-  q('st-msg').textContent=s.messages;
-  q('st-unread').textContent=s.unread_msgs>0?s.unread_msgs+' unread':'';
-  q('st-unread').style.color=s.unread_msgs>0?'#e50914':'#334155';
-  var b=q('unread-badge');b.textContent=s.unread_msgs;b.style.display=s.unread_msgs>0?'inline':'none';
-  // Analytics
-  q('an-users').textContent=s.users;q('an-active').textContent=s.active;
-  q('an-banned').textContent=s.banned;q('an-rev').textContent=s.reviews;
-  q('an-wl').textContent=s.watchlist;q('an-msg').textContent=s.messages;
-  // Tab labels
-  q('tb-users').innerHTML='&#128100; Users ('+s.users+')';
-  q('tb-reviews').innerHTML='&#128172; Reviews ('+s.reviews+')';
-  // Charts
-  renderSentChart(s.pos,s.neg,s.neu);
-  renderPopChart(D.popular||[]);
-  // Tables
-  buildUsers();buildWL('watchlist');buildWL('favorites');buildReviews();buildMessages();
-  // Insights
-  buildInsights();
+  try {
+    var s=D.stats;
+    // Cards
+    q('st-users').textContent=s.users;
+    q('st-active').textContent=s.active+' active';
+    q('st-wl').textContent=s.watchlist;
+    q('st-fav').textContent=s.favorites;
+    q('st-rev').textContent=s.reviews;
+    q('st-msg').textContent=s.messages;
+    q('st-unread').textContent=s.unread_msgs>0?s.unread_msgs+' unread':'';
+    q('st-unread').style.color=s.unread_msgs>0?'#e50914':'#334155';
+    var b=q('unread-badge');
+    if(b){b.textContent=s.unread_msgs;b.style.display=s.unread_msgs>0?'inline':'none';}
+    // Analytics panel numbers
+    q('an-users').textContent=s.users;q('an-active').textContent=s.active;
+    q('an-banned').textContent=s.banned;q('an-rev').textContent=s.reviews;
+    q('an-wl').textContent=s.watchlist;q('an-msg').textContent=s.messages;
+    // --- BUILD TABLES FIRST (critical — must run before charts) ---
+    buildUsers();
+    buildWL('watchlist');
+    buildWL('favorites');
+    buildReviews();
+    buildMessages();
+    buildInsights();
+    q('live-txt').textContent='Live';
+    // --- CHARTS LAST — safe to fail without affecting tables ---
+    try{ renderSentChart(s.pos,s.neg,s.neu); }catch(ce){ console.warn('Sentiment chart skipped:',ce.message); }
+    try{ renderPopChart(D.popular||[]); }catch(ce){ console.warn('Popular chart skipped:',ce.message); }
+  } catch(e) {
+    console.error('renderAll error:',e);
+    toast('Render error: '+e.message,'ter');
+  }
 }
+
 
 // ── Charts ─────────────────────────────────────────────────────────────
 function renderSentChart(pos,neg,neu){
