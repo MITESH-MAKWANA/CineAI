@@ -135,8 +135,11 @@ def _get_data():
 def get_dashboard(key: str) -> str:
     """Return complete dashboard HTML with data embedded as JSON."""
     data = _get_data()
+    # CRITICAL: escape </ in JSON to prevent </script> from terminating the <script> tag early
     data_json = json.dumps(data, ensure_ascii=True, separators=(',', ':'))
-    return _DASHBOARD_TEMPLATE.replace("__DATA_JSON__", data_json).replace("__KEY__", key)
+    data_json = data_json.replace('</', '<\\/')   # "</script>" → "<\/script>" (valid JSON, safe HTML)
+    safe_key  = key.replace("'", "\\'").replace("\\", "\\\\")
+    return _DASHBOARD_TEMPLATE.replace("__DATA_JSON__", data_json).replace("__KEY__", safe_key)
 
 
 # ─── Login / Wrong-key pages ───────────────────────────────────────────────────
