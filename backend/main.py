@@ -77,10 +77,10 @@ def health():
 # Admin Dashboard
 @app.get("/admin", response_class=HTMLResponse, tags=["Admin"])
 def admin_dashboard(key: str = Query(default="")):
-    from admin_dashboard import LOGIN_HTML, WRONG_HTML, DASHBOARD_HTML
+    from admin_dashboard import LOGIN_HTML, WRONG_HTML, get_dashboard
     if not key:
         return HTMLResponse(LOGIN_HTML)
     if key != ADMIN_SECRET:
         return HTMLResponse(WRONG_HTML, status_code=403)
-    return HTMLResponse(DASHBOARD_HTML)
+    return HTMLResponse(get_dashboard(key))
 
