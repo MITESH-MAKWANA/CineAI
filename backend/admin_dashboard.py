@@ -438,6 +438,11 @@ tr.unread td{background:rgba(99,102,241,.04)}
 .nbanner.show{display:flex}
 footer{text-align:center;padding:14px;color:#1e293b;font-size:12px;border-top:1px solid #0a0a20;margin-top:8px}
 @media(max-width:640px){.ag{grid-template-columns:1fr}.mgr{grid-template-columns:repeat(2,1fr)}}
+/* CSS radio-button tab switching — works without any JavaScript */
+.rt{position:absolute;opacity:0;pointer-events:none;width:0;height:0}
+#rt-analytics:checked~#panel-analytics,#rt-users:checked~#panel-users,#rt-watchlist:checked~#panel-watchlist,#rt-favorites:checked~#panel-favorites,#rt-reviews:checked~#panel-reviews,#rt-messages:checked~#panel-messages,#rt-insights:checked~#panel-insights{display:block!important}
+label.card{display:block;cursor:pointer}
+label.tab{cursor:pointer}
 </style></head><body>
 
 <header>
@@ -455,38 +460,47 @@ footer{text-align:center;padding:14px;color:#1e293b;font-size:12px;border-top:1p
 <button style="margin-left:auto;background:none;border:none;color:#818cf8;cursor:pointer;font-size:12px" onclick="this.parentElement.classList.remove('show')">Dismiss</button>
 </div>
 
-<!-- Stat cards -->
+<!-- Radio inputs — checked state drives panel visibility via CSS -->
+<input type="radio" name="dt" id="rt-analytics" class="rt" checked>
+<input type="radio" name="dt" id="rt-users" class="rt">
+<input type="radio" name="dt" id="rt-watchlist" class="rt">
+<input type="radio" name="dt" id="rt-favorites" class="rt">
+<input type="radio" name="dt" id="rt-reviews" class="rt">
+<input type="radio" name="dt" id="rt-messages" class="rt">
+<input type="radio" name="dt" id="rt-insights" class="rt">
+
+<!-- Stat cards (as labels — clicking selects radio → CSS shows panel) -->
 <div class="cards">
-  <div class="card active" id="c-analytics" onclick="sw('analytics')">
-    <div class="n">&#128202;</div><div class="l">Analytics</div></div>
-  <div class="card" id="c-users" onclick="sw('users')">
+  <label class="card active" id="c-analytics" for="rt-analytics">
+    <div class="n">&#128202;</div><div class="l">Analytics</div></label>
+  <label class="card" id="c-users" for="rt-users">
     <div class="n">__N_USERS__</div><div class="l">Users</div>
-    <div class="s" style="color:#64748b">__N_ACTIVE__ active</div></div>
-  <div class="card" id="c-watchlist" onclick="sw('watchlist')">
-    <div class="n">__N_WL__</div><div class="l">Watchlist</div></div>
-  <div class="card" id="c-favorites" onclick="sw('favorites')">
-    <div class="n">__N_FAV__</div><div class="l">Favorites</div></div>
-  <div class="card" id="c-reviews" onclick="sw('reviews')">
-    <div class="n">__N_REV__</div><div class="l">Reviews</div></div>
-  <div class="card" id="c-messages" onclick="sw('messages')">
-    <div class="n">__N_MSG__</div><div class="l">Messages</div>__UNREAD_LABEL__</div>
-  <div class="card" id="c-insights" onclick="sw('insights')">
-    <div class="n">&#128200;</div><div class="l">Insights</div></div>
+    <div class="s" style="color:#64748b">__N_ACTIVE__ active</div></label>
+  <label class="card" id="c-watchlist" for="rt-watchlist">
+    <div class="n">__N_WL__</div><div class="l">Watchlist</div></label>
+  <label class="card" id="c-favorites" for="rt-favorites">
+    <div class="n">__N_FAV__</div><div class="l">Favorites</div></label>
+  <label class="card" id="c-reviews" for="rt-reviews">
+    <div class="n">__N_REV__</div><div class="l">Reviews</div></label>
+  <label class="card" id="c-messages" for="rt-messages">
+    <div class="n">__N_MSG__</div><div class="l">Messages</div>__UNREAD_LABEL__</label>
+  <label class="card" id="c-insights" for="rt-insights">
+    <div class="n">&#128200;</div><div class="l">Insights</div></label>
 </div>
 
 <!-- Tabs -->
 <div class="tabs">
-  <div class="tab active" id="tb-analytics" onclick="sw('analytics')">&#128202; Analytics</div>
-  <div class="tab" id="tb-users" onclick="sw('users')">&#128100; Users (__N_USERS__)</div>
-  <div class="tab" id="tb-watchlist" onclick="sw('watchlist')">&#128203; Watchlist</div>
-  <div class="tab" id="tb-favorites" onclick="sw('favorites')">&#10084; Favorites</div>
-  <div class="tab" id="tb-reviews" onclick="sw('reviews')">&#128172; Reviews (__N_REV__)</div>
-  <div class="tab" id="tb-messages" onclick="sw('messages')">&#128233; Messages__UNREAD_BADGE__</div>
-  <div class="tab" id="tb-insights" onclick="sw('insights')">&#128200; Insights</div>
+  <label class="tab active" id="tb-analytics" for="rt-analytics">&#128202; Analytics</label>
+  <label class="tab" id="tb-users" for="rt-users">&#128100; Users (__N_USERS__)</label>
+  <label class="tab" id="tb-watchlist" for="rt-watchlist">&#128203; Watchlist</label>
+  <label class="tab" id="tb-favorites" for="rt-favorites">&#10084; Favorites</label>
+  <label class="tab" id="tb-reviews" for="rt-reviews">&#128172; Reviews (__N_REV__)</label>
+  <label class="tab" id="tb-messages" for="rt-messages">&#128233; Messages__UNREAD_BADGE__</label>
+  <label class="tab" id="tb-insights" for="rt-insights">&#128200; Insights</label>
 </div>
 
 <!-- ANALYTICS -->
-<div class="panel active" id="panel-analytics">
+<div class="panel" id="panel-analytics" hidden>
   <div class="ag">
     <div class="ac2"><div class="at">Platform Overview</div>
       <div class="sg">
@@ -503,11 +517,11 @@ footer{text-align:center;padding:14px;color:#1e293b;font-size:12px;border-top:1p
   <div class="ac2" style="margin-bottom:14px"><div class="at">Most Popular Movies (Top 10)</div><canvas id="popChart" height="90"></canvas></div>
   <div class="ac2"><div class="at">Quick Exports</div>
     <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">
-      <button class="ebtn" onclick="exportCSV('users')">&#128229; Users CSV</button>
-      <button class="ebtn" onclick="exportCSV('watchlist')">&#128229; Watchlist CSV</button>
-      <button class="ebtn" onclick="exportCSV('favorites')">&#128229; Favorites CSV</button>
-      <button class="ebtn" onclick="exportCSV('reviews')">&#128229; Reviews CSV</button>
-      <button class="ebtn" onclick="exportCSV('messages')">&#128229; Messages CSV</button>
+      <button type="button" class="ebtn" onclick="exportCSV('users')">&#128229; Users CSV</button>
+      <button type="button" class="ebtn" onclick="exportCSV('watchlist')">&#128229; Watchlist CSV</button>
+      <button type="button" class="ebtn" onclick="exportCSV('favorites')">&#128229; Favorites CSV</button>
+      <button type="button" class="ebtn" onclick="exportCSV('reviews')">&#128229; Reviews CSV</button>
+      <button type="button" class="ebtn" onclick="exportCSV('messages')">&#128229; Messages CSV</button>
     </div>
   </div>
 </div>
@@ -526,7 +540,7 @@ footer{text-align:center;padding:14px;color:#1e293b;font-size:12px;border-top:1p
       <option value="reviews">Most Reviews</option><option value="watchlist">Most Watchlist</option>
     </select>
     <span class="rc" id="cnt-users">__N_USERS__ records</span>
-    <button class="ebtn" onclick="exportCSV('users')">&#128229; CSV</button>
+    <button type="button" class="ebtn" onclick="exportCSV('users')">&#128229; CSV</button>
   </div>
   <div class="tw"><table id="tbl-users">
     <thead><tr><th>ID</th><th>Username</th><th>Email</th><th>Age</th><th>Gender</th>
@@ -543,7 +557,7 @@ footer{text-align:center;padding:14px;color:#1e293b;font-size:12px;border-top:1p
     <div class="sw"><span class="si">&#128269;</span>
       <input class="sbox" id="srch-watchlist" placeholder="Search movie title, user ID..." oninput="filt('watchlist')"/></div>
     <span class="rc" id="cnt-watchlist">__N_WL__ records</span>
-    <button class="ebtn" onclick="exportCSV('watchlist')">&#128229; CSV</button>
+    <button type="button" class="ebtn" onclick="exportCSV('watchlist')">&#128229; CSV</button>
   </div>
   <div class="tw"><table id="tbl-watchlist">
     <thead><tr><th>ID</th><th>User ID</th><th>Movie ID</th><th>Movie Title</th><th>Added At</th></tr></thead>
@@ -558,7 +572,7 @@ footer{text-align:center;padding:14px;color:#1e293b;font-size:12px;border-top:1p
     <div class="sw"><span class="si">&#128269;</span>
       <input class="sbox" id="srch-favorites" placeholder="Search movie title, user ID..." oninput="filt('favorites')"/></div>
     <span class="rc" id="cnt-favorites">__N_FAV__ records</span>
-    <button class="ebtn" onclick="exportCSV('favorites')">&#128229; CSV</button>
+    <button type="button" class="ebtn" onclick="exportCSV('favorites')">&#128229; CSV</button>
   </div>
   <div class="tw"><table id="tbl-favorites">
     <thead><tr><th>ID</th><th>User ID</th><th>Movie ID</th><th>Movie Title</th><th>Added At</th></tr></thead>
@@ -577,7 +591,7 @@ footer{text-align:center;padding:14px;color:#1e293b;font-size:12px;border-top:1p
       <option value="negative">Negative</option><option value="neutral">Neutral</option>
     </select>
     <span class="rc" id="cnt-reviews">__N_REV__ records</span>
-    <button class="ebtn" onclick="exportCSV('reviews')">&#128229; CSV</button>
+    <button type="button" class="ebtn" onclick="exportCSV('reviews')">&#128229; CSV</button>
   </div>
   <div class="tw"><table id="tbl-reviews">
     <thead><tr><th>ID</th><th>User ID</th><th>Movie</th><th>Review</th><th>Sentiment</th><th>Date</th></tr></thead>
@@ -595,7 +609,7 @@ footer{text-align:center;padding:14px;color:#1e293b;font-size:12px;border-top:1p
       <option value="">All Messages</option><option value="unread">Unread Only</option><option value="read">Read Only</option>
     </select>
     <span class="rc" id="cnt-messages">__N_MSG__ records</span>
-    <button class="ebtn" onclick="exportCSV('messages')">&#128229; CSV</button>
+    <button type="button" class="ebtn" onclick="exportCSV('messages')">&#128229; CSV</button>
   </div>
   <div class="tw"><table id="tbl-messages">
     <thead><tr><th>ID</th><th>Name</th><th>Email</th><th>Subject</th><th>Message</th>
@@ -635,16 +649,20 @@ function q(id){return document.getElementById(id);}
 function esc(v){return String(v==null?"":v).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");}
 function toast(msg,cls){var t=q("toast");t.textContent=msg;t.className="toast "+cls;t.style.display="block";setTimeout(function(){t.style.display="none";},2800);}
 
-// Tab switching — uses HTML hidden attribute (browser-native, beats all CSS)
+// Tab switching — CSS radio buttons handle panel visibility
+// sw() only updates active-class cosmetics on tabs and cards
 var TABS=["analytics","users","watchlist","favorites","reviews","messages","insights"];
 function sw(name){
   TABS.forEach(function(t){
-    var p=q("panel-"+t),tb=q("tb-"+t),c=q("c-"+t);
-    if(p)  p.hidden=(t!==name);
+    var tb=q("tb-"+t),c=q("c-"+t);
     if(tb){tb.className="tab"+(t===name?" active":"");}
     if(c) {c.className="card"+(t===name?" active":"");}
   });
 }
+// Bind radio change → update active cosmetics
+document.querySelectorAll('.rt').forEach(function(r){
+  r.addEventListener('change',function(){sw(this.id.replace('rt-',''));});
+});
 
 // Search / filter
 function filt(tid){
@@ -832,8 +850,7 @@ function startPolling(){
 
 // Init — runs immediately, no async dependency
 try{
-  // Force-show analytics panel using style.display (not CSS class) for reliability
-  sw("analytics");
+  // CSS radio-button shows analytics by default (rt-analytics has checked in HTML)
   initPaging();
   q("last-upd").textContent="Loaded "+new Date().toLocaleTimeString();
   setTimeout(drawCharts,100);
