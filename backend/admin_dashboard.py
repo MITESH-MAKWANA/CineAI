@@ -347,7 +347,7 @@ _TEMPLATE = """<!DOCTYPE html>
 <html lang="en"><head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>CineAI Admin Dashboard</title>
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js" onerror="window._noChart=true"></script>
+<script>window._noChart=false;</script><script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js" onerror="document.write('<script src=&quot;https://unpkg.com/chart.js@4.4.0/dist/chart.umd.min.js&quot; onerror=&quot;window._noChart=true&quot;></s'+'cript>')"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:'Segoe UI',system-ui,sans-serif;background:#080812;color:#e2e8f0;min-height:100vh}
@@ -370,7 +370,7 @@ header{background:linear-gradient(120deg,#3b1f8c,#6d28d9);padding:14px 22px;disp
 .tab{padding:10px 14px;font-size:13px;font-weight:500;color:#64748b;border-bottom:2px solid transparent;cursor:pointer;transition:.15s;white-space:nowrap}
 .tab:hover{color:#c4b5fd}.tab.active{color:#c4b5fd;border-bottom-color:#7c3aed}
 .badge{background:#e50914;color:#fff;border-radius:10px;padding:1px 6px;font-size:10px;font-weight:800;margin-left:4px}
-.panel{padding:14px 22px 40px}[hidden]{display:none!important}
+.panel{display:none;padding:14px 22px 40px}
 .toolbar{display:flex;align-items:center;gap:8px;margin-bottom:12px;flex-wrap:wrap}
 .sw{position:relative;flex:1;min-width:180px;max-width:320px}
 .si{position:absolute;left:10px;top:50%;transform:translateY(-50%);font-size:12px;pointer-events:none;color:#64748b}
@@ -440,7 +440,7 @@ footer{text-align:center;padding:14px;color:#1e293b;font-size:12px;border-top:1p
 @media(max-width:640px){.ag{grid-template-columns:1fr}.mgr{grid-template-columns:repeat(2,1fr)}}
 /* CSS radio-button tab switching — works without any JavaScript */
 .rt{position:absolute;opacity:0;pointer-events:none;width:0;height:0}
-#rt-analytics:checked~#panel-analytics,#rt-users:checked~#panel-users,#rt-watchlist:checked~#panel-watchlist,#rt-favorites:checked~#panel-favorites,#rt-reviews:checked~#panel-reviews,#rt-messages:checked~#panel-messages,#rt-insights:checked~#panel-insights{display:block!important}
+#rt-analytics:checked~#panel-analytics,#rt-users:checked~#panel-users,#rt-watchlist:checked~#panel-watchlist,#rt-favorites:checked~#panel-favorites,#rt-reviews:checked~#panel-reviews,#rt-messages:checked~#panel-messages,#rt-insights:checked~#panel-insights{display:block!important;visibility:visible!important}
 label.card{display:block;cursor:pointer}
 label.tab{cursor:pointer}
 </style></head><body>
@@ -500,7 +500,7 @@ label.tab{cursor:pointer}
 </div>
 
 <!-- ANALYTICS -->
-<div class="panel" id="panel-analytics" hidden>
+<div class="panel" id="panel-analytics">
   <div class="ag">
     <div class="ac2"><div class="at">Platform Overview</div>
       <div class="sg">
@@ -527,7 +527,7 @@ label.tab{cursor:pointer}
 </div>
 
 <!-- USERS -->
-<div class="panel" id="panel-users" hidden>
+<div class="panel" id="panel-users">
   <div class="toolbar">
     <div class="sw"><span class="si">&#128269;</span>
       <input class="sbox" id="srch-users" placeholder="Search name, email, ID..." oninput="filt('users')"/></div>
@@ -552,7 +552,7 @@ label.tab{cursor:pointer}
 </div>
 
 <!-- WATCHLIST -->
-<div class="panel" id="panel-watchlist" hidden>
+<div class="panel" id="panel-watchlist">
   <div class="toolbar">
     <div class="sw"><span class="si">&#128269;</span>
       <input class="sbox" id="srch-watchlist" placeholder="Search movie title, user ID..." oninput="filt('watchlist')"/></div>
@@ -567,7 +567,7 @@ label.tab{cursor:pointer}
 </div>
 
 <!-- FAVORITES -->
-<div class="panel" id="panel-favorites" hidden>
+<div class="panel" id="panel-favorites">
   <div class="toolbar">
     <div class="sw"><span class="si">&#128269;</span>
       <input class="sbox" id="srch-favorites" placeholder="Search movie title, user ID..." oninput="filt('favorites')"/></div>
@@ -582,7 +582,7 @@ label.tab{cursor:pointer}
 </div>
 
 <!-- REVIEWS -->
-<div class="panel" id="panel-reviews" hidden>
+<div class="panel" id="panel-reviews">
   <div class="toolbar">
     <div class="sw"><span class="si">&#128269;</span>
       <input class="sbox" id="srch-reviews" placeholder="Search movie, review text..." oninput="filt('reviews')"/></div>
@@ -601,7 +601,7 @@ label.tab{cursor:pointer}
 </div>
 
 <!-- MESSAGES -->
-<div class="panel" id="panel-messages" hidden>
+<div class="panel" id="panel-messages">
   <div class="toolbar">
     <div class="sw"><span class="si">&#128269;</span>
       <input class="sbox" id="srch-messages" placeholder="Search name, email, subject..." oninput="filt('messages')"/></div>
@@ -620,7 +620,7 @@ label.tab{cursor:pointer}
 </div>
 
 <!-- INSIGHTS -->
-<div class="panel" id="panel-insights" hidden>__INSIGHTS__</div>
+<div class="panel" id="panel-insights">__INSIGHTS__</div>
 
 <!-- Modal -->
 <div class="mo" id="userModal" onclick="if(event.target===this)closeModal()">
@@ -659,6 +659,19 @@ function sw(name){
     if(c) {c.className="card"+(t===name?" active":"");}
   });
 }
+// Bind ALL search inputs and filter selects via addEventListener for robustness
+// (supplements the inline oninput/onchange attributes)
+['users','watchlist','favorites','reviews','messages'].forEach(function(tid){
+  var inp=q('srch-'+tid);
+  if(inp) inp.addEventListener('input',function(){filt(tid);});
+});
+['f-status','f-sort'].forEach(function(id){
+  var el=q(id);
+  if(el) el.addEventListener('change',function(){filt('users');});
+});
+var fsentEl=q('f-sent'); if(fsentEl) fsentEl.addEventListener('change',function(){filt('reviews');});
+var freadEl=q('f-read'); if(freadEl) freadEl.addEventListener('change',function(){filt('messages');});
+
 // Bind radio change → update active cosmetics + redraw charts
 document.querySelectorAll('.rt').forEach(function(r){
   r.addEventListener('change',function(){
@@ -733,7 +746,37 @@ function initPaging(){["users","watchlist","favorites","reviews","messages"].for
 
 // Charts
 function drawCharts(){
-  if(window._noChart||typeof Chart==="undefined") return;
+  if(!D||!D.stats) return;  // safety check
+  if(window._noChart||typeof Chart==="undefined"){
+    // Inline CSS fallback for sentiment when Chart.js unavailable
+    var sc=q('sentChart');
+    if(sc){
+      var s=D.stats; var tot=(s.pos+s.neg+s.neu)||1;
+      var pct=function(n){return Math.round(n/tot*100)+'%';};
+      var p=sc.parentElement;
+      p.innerHTML='<div class="at">Sentiment Distribution</div>'
+        +'<div style="margin-top:12px">'
+        +'<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><div style="background:#10b981;height:16px;border-radius:4px;width:'+pct(s.pos)+'"></div><span style="font-size:12px;color:#34d399">Positive '+pct(s.pos)+'</span></div>'
+        +'<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><div style="background:#ef4444;height:16px;border-radius:4px;width:'+pct(s.neg)+'"></div><span style="font-size:12px;color:#f87171">Negative '+pct(s.neg)+'</span></div>'
+        +'<div style="display:flex;align-items:center;gap:8px"><div style="background:#94a3b8;height:16px;border-radius:4px;width:'+pct(s.neu)+'"></div><span style="font-size:12px;color:#94a3b8">Neutral '+pct(s.neu)+'</span></div>'
+        +'</div>';
+    }
+    var pc=q('popChart');
+    if(pc&&D.popular&&D.popular.length){
+      var p2=pc.parentElement; var max=D.popular[0].count||1;
+      p2.innerHTML='<div class="at">Most Popular Movies (Top 10)</div>'
+        +D.popular.slice(0,10).map(function(m,i){
+          var w=Math.round(m.count/max*100)+'%';
+          return '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">'
+            +'<span style="font-size:11px;color:#64748b;width:18px">'+(i+1)+'.</span>'
+            +'<div style="background:#7c3aed;height:14px;border-radius:3px;flex:0 0 '+w+'"></div>'
+            +'<span style="font-size:12px;color:#a78bfa;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:160px">'+esc(m.title)+'</span>'
+            +'<span style="font-size:11px;color:#64748b;">'+m.count+'</span>'
+            +'</div>';
+        }).join('')+'</div>';
+    }
+    return;
+  }
   try{
     var ctx=q("sentChart"); if(!ctx) return;
     var s=D.stats;
@@ -869,7 +912,7 @@ try{
   initPaging();
   filt("users");  // apply default newest-first sort on load
   q("last-upd").textContent="Loaded "+new Date().toLocaleTimeString();
-  setTimeout(drawCharts,100);
+  drawCharts(); setTimeout(drawCharts,500);
   startPolling();
 }catch(err){
   // Show init error prominently
