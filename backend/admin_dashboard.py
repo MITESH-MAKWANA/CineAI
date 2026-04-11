@@ -617,6 +617,14 @@ footer{text-align:center;padding:14px;color:#1e293b;font-size:12px;border-top:1p
 <footer>CineAI Admin Dashboard &bull; PostgreSQL &bull; &#128274; Admin Only</footer>
 
 <script>
+// Visible error overlay — helps diagnose JS issues
+window.onerror=function(msg,src,line){
+  var d=document.getElementById("err-ov");
+  if(!d){d=document.createElement("div");d.id="err-ov";
+    d.style.cssText="position:fixed;top:54px;left:0;right:0;z-index:9999;background:#7f1d1d;color:#fca5a5;padding:10px 20px;font-size:12px;font-family:monospace";
+    document.body.appendChild(d);}
+  d.textContent="JS Error: "+msg+" (line "+line+")";
+};
 var D    = __DATA_JSON__;  // used only by modal
 var KEY  = "__KEY__";
 var PER  = {users:25,watchlist:25,favorites:25,reviews:25,messages:25};
@@ -627,13 +635,14 @@ function q(id){return document.getElementById(id);}
 function esc(v){return String(v==null?"":v).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");}
 function toast(msg,cls){var t=q("toast");t.textContent=msg;t.className="toast "+cls;t.style.display="block";setTimeout(function(){t.style.display="none";},2800);}
 
-// Tab switching
+// Tab switching — uses style.display directly for max browser compatibility
+var TABS=["analytics","users","watchlist","favorites","reviews","messages","insights"];
 function sw(name){
-  ["analytics","users","watchlist","favorites","reviews","messages","insights"].forEach(function(t){
+  TABS.forEach(function(t){
     var p=q("panel-"+t),tb=q("tb-"+t),c=q("c-"+t);
-    if(p)  p.classList.toggle("active",t===name);
-    if(tb) tb.classList.toggle("active",t===name);
-    if(c)  c.classList.toggle("active",t===name);
+    if(p)  p.style.display=(t===name)?"block":"none";
+    if(tb){tb.className="tab"+(t===name?" active":"");}
+    if(c) {c.className="card"+(t===name?" active":"");}
   });
 }
 
@@ -822,8 +831,19 @@ function startPolling(){
 }
 
 // Init — runs immediately, no async dependency
-initPaging();
-q("last-upd").textContent="Loaded "+new Date().toLocaleTimeString();
-setTimeout(drawCharts, 100);
-startPolling();
+try{
+  // Force-show analytics panel using style.display (not CSS class) for reliability
+  sw("analytics");
+  initPaging();
+  q("last-upd").textContent="Loaded "+new Date().toLocaleTimeString();
+  setTimeout(drawCharts,100);
+  startPolling();
+}catch(err){
+  // Show init error prominently
+  var d=document.getElementById("err-ov");
+  if(!d){d=document.createElement("div");d.id="err-ov";
+    d.style.cssText="position:fixed;top:54px;left:0;right:0;z-index:9999;background:#7f1d1d;color:#fca5a5;padding:10px 20px;font-size:12px;font-family:monospace";
+    document.body.appendChild(d);}
+  d.textContent="Init Error: "+err.message+" — stack: "+(err.stack||"").slice(0,200);
+}
 </script></body></html>"""
