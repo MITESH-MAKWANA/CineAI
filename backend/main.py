@@ -76,11 +76,41 @@ def health():
 
 # Admin Dashboard
 @app.get("/admin", response_class=HTMLResponse, tags=["Admin"])
-def admin_dashboard(key: str = Query(default="")):
+def admin_dashboard(
+    key:    str = Query(default=""),
+    tab:    str = Query(default="analytics"),
+    q:      str = Query(default=""),
+    status: str = Query(default=""),
+    sort:   str = Query(default="newest"),
+    sent:   str = Query(default=""),
+    rd:     str = Query(default=""),
+):
     from admin_dashboard import LOGIN_HTML, WRONG_HTML, get_dashboard
     if not key:
         return HTMLResponse(LOGIN_HTML)
     if key != ADMIN_SECRET:
         return HTMLResponse(WRONG_HTML, status_code=403)
-    return HTMLResponse(get_dashboard(key))
+    return HTMLResponse(get_dashboard(key, tab=tab, q=q, status=status,
+                                       sort=sort, sent=sent, rd=rd))
+
+
+# Admin CSV Export — direct file download, no JavaScript needed
+@app.get("/admin/export/{table}", tags=["Admin"])
+def admin_export_csv(table: str, key: str = Query(default="")):
+    from fastapi.responses import Response
+    from admin_dashboard import get_csv_content
+    if key != ADMIN_SECRET:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=403, detail="Invalid admin key")
+    if table not in ("users", "watchlist", "favorites", "reviews", "messages"):
+        from fastapi import HTTPException
+        raise HTTPException(status_code=404, detail="Unknown table")
+    content = get_csv_content(table)
+    filename = f"cineai_{table}.csv"
+    return Response(
+        content=content.encode("utf-8-sig"),
+        media_type="text/csv; charset=utf-8",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
+
 
