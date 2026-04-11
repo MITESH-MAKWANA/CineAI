@@ -37,7 +37,7 @@ def _get_data():
             LEFT JOIN watchlist w ON w.user_id=u.id
             LEFT JOIN favorites f ON f.user_id=u.id
             LEFT JOIN reviews r   ON r.user_id=u.id
-            GROUP BY u.id ORDER BY u.id
+            GROUP BY u.id ORDER BY u.id DESC
         """)).fetchall()
         for row in rows:
             users.append({"id": row[0], "username": row[1] or "", "email": row[2] or "",
@@ -59,13 +59,13 @@ def _get_data():
             db.rollback()
 
     try:
-        for row in db.execute(text("SELECT id,user_id,movie_id,movie_title,COALESCE(poster_path,''),added_at FROM watchlist ORDER BY id")).fetchall():
+        for row in db.execute(text("SELECT id,user_id,movie_id,movie_title,COALESCE(poster_path,''),added_at FROM watchlist ORDER BY added_at DESC")).fetchall():
             wl.append({"id": row[0], "user_id": row[1], "movie_id": row[2],
                        "movie_title": row[3] or "", "poster_path": row[4] or "", "added_at": _fmt(row[5])})
     except Exception: db.rollback()
 
     try:
-        for row in db.execute(text("SELECT id,user_id,movie_id,movie_title,COALESCE(poster_path,''),added_at FROM favorites ORDER BY id")).fetchall():
+        for row in db.execute(text("SELECT id,user_id,movie_id,movie_title,COALESCE(poster_path,''),added_at FROM favorites ORDER BY added_at DESC")).fetchall():
             fav.append({"id": row[0], "user_id": row[1], "movie_id": row[2],
                         "movie_title": row[3] or "", "poster_path": row[4] or "", "added_at": _fmt(row[5])})
     except Exception: db.rollback()
@@ -129,11 +129,11 @@ def _users_html(users):
         status = "banned" if bn else ("active" if act else "inactive")
         status_label = "Banned" if bn else ("Active" if act else "Inactive")
         ban_btn = (
-            f'<button class="ba unb-btn" onclick="act(\'POST\',\'/admin/users/{u["id"]}/unban\',this)">Unban</button>'
+            f'<button type="button" class="ba unb-btn" onclick="act(\'POST\',\'/admin/users/{u["id"]}/unban\',this)">Unban</button>'
             if bn else
-            f'<button class="ba ban-btn" onclick="act(\'POST\',\'/admin/users/{u["id"]}/ban\',this)">Ban</button>'
+            f'<button type="button" class="ba ban-btn" onclick="act(\'POST\',\'/admin/users/{u["id"]}/ban\',this)">Ban</button>'
         )
-        del_btn = f'<button class="ba del-btn" onclick="act(\'DELETE\',\'/admin/users/{u["id"]}\',this,true)">Del</button>'
+        del_btn = f'<button type="button" class="ba del-btn" onclick="act(\'DELETE\',\'/admin/users/{u["id"]}\',this,true)">Del</button>'
         genres = _e(u["favorite_genres"][:22]) if u["favorite_genres"] else "-"
         rows.append(
             f'<tr class="dr{" banned" if bn else ""}" '
@@ -204,9 +204,9 @@ def _messages_html(messages):
         is_read = m["is_read"]
         read_btn = (
             "" if is_read else
-            f'<button class="ba rd-btn" onclick="act(\'POST\',\'/admin/messages/{m["id"]}/read\',this)">Mark Read</button>'
+            f'<button type="button" class="ba rd-btn" onclick="act(\'POST\',\'/admin/messages/{m["id"]}/read\',this)">Mark Read</button>'
         )
-        del_btn = f'<button class="ba del-btn" onclick="act(\'DELETE\',\'/admin/messages/{m["id"]}\',this,true)">Del</button>'
+        del_btn = f'<button type="button" class="ba del-btn" onclick="act(\'DELETE\',\'/admin/messages/{m["id"]}\',this,true)">Del</button>'
         rows.append(
             f'<tr class="dr{" " if is_read else " unread"}" '
             f'data-s="{_e(m["name"])} {_e(m["email"])} {_e(m["subject"])}" '
@@ -659,17 +659,29 @@ function sw(name){
     if(c) {c.className="card"+(t===name?" active":"");}
   });
 }
-// Bind radio change → update active cosmetics
+// Bind radio change → update active cosmetics + redraw charts
 document.querySelectorAll('.rt').forEach(function(r){
-  r.addEventListener('change',function(){sw(this.id.replace('rt-',''));});
+  r.addEventListener('change',function(){
+    var name=this.id.replace('rt-','');
+    sw(name);
+    if(name==='analytics'){
+      // Force chart redraw/resize after panel becomes visible
+      setTimeout(function(){
+        if(sChart){sChart.resize();sChart.update();}
+        else{drawCharts();}
+        if(pChart){pChart.resize();pChart.update();}
+        else{drawCharts();}
+      },50);
+    }
+  });
 });
 
 // Search / filter
 function filt(tid){
   var sq=(q("srch-"+tid)||{value:""}).value.toLowerCase().trim();
-  var sent=(q("f-sent")||{value:""}).value;
-  var stat=(q("f-status")||{value:""}).value;
-  var rd  =(q("f-read")||{value:""}).value;
+  var sent=tid==="reviews"  ?(q("f-sent")  ||{value:""}).value:"";
+  var stat=tid==="users"    ?(q("f-status")||{value:""}).value:"";
+  var rd  =tid==="messages" ?(q("f-read")  ||{value:""}).value:"";
   var rows=Array.from(document.querySelectorAll("#body-"+tid+" tr.dr"));
   var vis=0;
   rows.forEach(function(r){
@@ -807,7 +819,10 @@ function closeModal(){q("userModal").classList.remove("open");}
 // CSV export — uses data-export=skip to exclude action columns only
 function exportCSV(tid){
   var tbl=q("tbl-"+tid); if(!tbl) return;
-  var rows=Array.from(tbl.querySelectorAll("tr")).filter(function(r){return !r.classList.contains("hidden");});
+  // Get all rows: exclude search-filtered (.hidden class) but include paginated rows
+  var rows=Array.from(tbl.querySelectorAll("tr")).filter(function(r){
+    return !r.classList.contains("hidden") && r.querySelector("th,td");
+  });
   var csv=rows.map(function(r){
     return Array.from(r.querySelectorAll("th,td"))
       .filter(function(c){return c.getAttribute("data-export")!=="skip";})
@@ -852,6 +867,7 @@ function startPolling(){
 try{
   // CSS radio-button shows analytics by default (rt-analytics has checked in HTML)
   initPaging();
+  filt("users");  // apply default newest-first sort on load
   q("last-upd").textContent="Loaded "+new Date().toLocaleTimeString();
   setTimeout(drawCharts,100);
   startPolling();
