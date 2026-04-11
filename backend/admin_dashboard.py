@@ -151,7 +151,7 @@ def _users_html(users):
             f'<td>{u["created_at"]}</td>'
             f'<td>{u["last_login"]}</td>'
             f'<td><span class="sb {status}">{status_label}</span></td>'
-            f'<td style="white-space:nowrap">{ban_btn}{del_btn}</td>'
+            f'<td style="white-space:nowrap" data-export="skip">{ban_btn}{del_btn}</td>'
             f'</tr>'
         )
     return "\n".join(rows)
@@ -216,7 +216,7 @@ def _messages_html(messages):
             f'<td title="{_e(msg)}">{preview}</td>'
             f'<td>{m["created_at"]}</td>'
             f'<td>{"&#9989; Read" if is_read else "&#128308; New"}</td>'
-            f'<td style="white-space:nowrap">{read_btn}{del_btn}</td></tr>'
+            f'<td style="white-space:nowrap" data-export="skip">{read_btn}{del_btn}</td></tr>'
         )
     return "\n".join(rows)
 
@@ -531,7 +531,7 @@ footer{text-align:center;padding:14px;color:#1e293b;font-size:12px;border-top:1p
   <div class="tw"><table id="tbl-users">
     <thead><tr><th>ID</th><th>Username</th><th>Email</th><th>Age</th><th>Gender</th>
       <th>Genres</th><th>Reviews</th><th>Watchlist</th><th>Registered</th><th>Last Login</th>
-      <th>Status</th><th>Actions</th></tr></thead>
+      <th>Status</th><th data-export="skip">Actions</th></tr></thead>
     <tbody id="body-users">__USERS_ROWS__</tbody>
   </table></div>
   <div class="pg" id="pg-users"></div>
@@ -599,7 +599,7 @@ footer{text-align:center;padding:14px;color:#1e293b;font-size:12px;border-top:1p
   </div>
   <div class="tw"><table id="tbl-messages">
     <thead><tr><th>ID</th><th>Name</th><th>Email</th><th>Subject</th><th>Message</th>
-      <th>Sent At</th><th>Status</th><th>Actions</th></tr></thead>
+      <th>Sent At</th><th>Status</th><th data-export="skip">Actions</th></tr></thead>
     <tbody id="body-messages">__MSG_ROWS__</tbody>
   </table></div>
   <div class="pg" id="pg-messages"></div>
@@ -777,19 +777,25 @@ function showUser(uid){
 }
 function closeModal(){q("userModal").classList.remove("open");}
 
-// CSV export
+// CSV export — uses data-export=skip to exclude action columns only
 function exportCSV(tid){
   var tbl=q("tbl-"+tid); if(!tbl) return;
   var rows=Array.from(tbl.querySelectorAll("tr")).filter(function(r){return !r.classList.contains("hidden");});
   var csv=rows.map(function(r){
-    return Array.from(r.querySelectorAll("th,td")).slice(0,-1).map(function(c){
-      return '"'+c.textContent.trim().replace(/"/g,'""')+'"';
-    }).join(",");
-  }).join("\\n");
-  var a=document.createElement("a");
-  a.href="data:text/csv;charset=utf-8,"+encodeURIComponent(csv);
-  a.download="cineai_"+tid+"_"+new Date().toISOString().slice(0,10)+".csv";
-  a.click();
+    return Array.from(r.querySelectorAll("th,td"))
+      .filter(function(c){return c.getAttribute("data-export")!=="skip";})
+      .map(function(c){return '"'+c.textContent.trim().replace(/"/g,'""')+'"';})
+      .join(",");
+  }).join("\\r\\n");
+  try{
+    var blob=new Blob(["\\uFEFF"+csv],{type:"text/csv;charset=utf-8"});
+    var url=URL.createObjectURL(blob);
+    var a=document.createElement("a");
+    a.style.display="none"; a.href=url;
+    a.download="cineai_"+tid+"_"+new Date().toISOString().slice(0,10)+".csv";
+    document.body.appendChild(a); a.click();
+    setTimeout(function(){document.body.removeChild(a);URL.revokeObjectURL(url);},300);
+  }catch(e){toast("Export error: "+e.message,"ter");}
 }
 
 // 30s live polling
