@@ -370,7 +370,7 @@ header{background:linear-gradient(120deg,#3b1f8c,#6d28d9);padding:14px 22px;disp
 .tab{padding:10px 14px;font-size:13px;font-weight:500;color:#64748b;border-bottom:2px solid transparent;cursor:pointer;transition:.15s;white-space:nowrap}
 .tab:hover{color:#c4b5fd}.tab.active{color:#c4b5fd;border-bottom-color:#7c3aed}
 .badge{background:#e50914;color:#fff;border-radius:10px;padding:1px 6px;font-size:10px;font-weight:800;margin-left:4px}
-.panel{display:none;padding:14px 22px 40px}.panel.active{display:block}
+.panel{padding:14px 22px 40px}[hidden]{display:none!important}
 .toolbar{display:flex;align-items:center;gap:8px;margin-bottom:12px;flex-wrap:wrap}
 .sw{position:relative;flex:1;min-width:180px;max-width:320px}
 .si{position:absolute;left:10px;top:50%;transform:translateY(-50%);font-size:12px;pointer-events:none;color:#64748b}
@@ -513,7 +513,7 @@ footer{text-align:center;padding:14px;color:#1e293b;font-size:12px;border-top:1p
 </div>
 
 <!-- USERS -->
-<div class="panel" id="panel-users">
+<div class="panel" id="panel-users" hidden>
   <div class="toolbar">
     <div class="sw"><span class="si">&#128269;</span>
       <input class="sbox" id="srch-users" placeholder="Search name, email, ID..." oninput="filt('users')"/></div>
@@ -538,7 +538,7 @@ footer{text-align:center;padding:14px;color:#1e293b;font-size:12px;border-top:1p
 </div>
 
 <!-- WATCHLIST -->
-<div class="panel" id="panel-watchlist">
+<div class="panel" id="panel-watchlist" hidden>
   <div class="toolbar">
     <div class="sw"><span class="si">&#128269;</span>
       <input class="sbox" id="srch-watchlist" placeholder="Search movie title, user ID..." oninput="filt('watchlist')"/></div>
@@ -553,7 +553,7 @@ footer{text-align:center;padding:14px;color:#1e293b;font-size:12px;border-top:1p
 </div>
 
 <!-- FAVORITES -->
-<div class="panel" id="panel-favorites">
+<div class="panel" id="panel-favorites" hidden>
   <div class="toolbar">
     <div class="sw"><span class="si">&#128269;</span>
       <input class="sbox" id="srch-favorites" placeholder="Search movie title, user ID..." oninput="filt('favorites')"/></div>
@@ -568,7 +568,7 @@ footer{text-align:center;padding:14px;color:#1e293b;font-size:12px;border-top:1p
 </div>
 
 <!-- REVIEWS -->
-<div class="panel" id="panel-reviews">
+<div class="panel" id="panel-reviews" hidden>
   <div class="toolbar">
     <div class="sw"><span class="si">&#128269;</span>
       <input class="sbox" id="srch-reviews" placeholder="Search movie, review text..." oninput="filt('reviews')"/></div>
@@ -587,7 +587,7 @@ footer{text-align:center;padding:14px;color:#1e293b;font-size:12px;border-top:1p
 </div>
 
 <!-- MESSAGES -->
-<div class="panel" id="panel-messages">
+<div class="panel" id="panel-messages" hidden>
   <div class="toolbar">
     <div class="sw"><span class="si">&#128269;</span>
       <input class="sbox" id="srch-messages" placeholder="Search name, email, subject..." oninput="filt('messages')"/></div>
@@ -606,7 +606,7 @@ footer{text-align:center;padding:14px;color:#1e293b;font-size:12px;border-top:1p
 </div>
 
 <!-- INSIGHTS -->
-<div class="panel" id="panel-insights">__INSIGHTS__</div>
+<div class="panel" id="panel-insights" hidden>__INSIGHTS__</div>
 
 <!-- Modal -->
 <div class="mo" id="userModal" onclick="if(event.target===this)closeModal()">
@@ -635,12 +635,12 @@ function q(id){return document.getElementById(id);}
 function esc(v){return String(v==null?"":v).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");}
 function toast(msg,cls){var t=q("toast");t.textContent=msg;t.className="toast "+cls;t.style.display="block";setTimeout(function(){t.style.display="none";},2800);}
 
-// Tab switching — uses style.display directly for max browser compatibility
+// Tab switching — uses HTML hidden attribute (browser-native, beats all CSS)
 var TABS=["analytics","users","watchlist","favorites","reviews","messages","insights"];
 function sw(name){
   TABS.forEach(function(t){
     var p=q("panel-"+t),tb=q("tb-"+t),c=q("c-"+t);
-    if(p)  p.style.display=(t===name)?"block":"none";
+    if(p)  p.hidden=(t!==name);
     if(tb){tb.className="tab"+(t===name?" active":"");}
     if(c) {c.className="card"+(t===name?" active":"");}
   });
