@@ -630,6 +630,29 @@ header{{background:linear-gradient(120deg,#3b1f8c,#6d28d9);padding:14px 22px;dis
 .tabs{{display:flex;padding:0 22px;border-bottom:1px solid #1a1a35;overflow-x:auto;gap:2px}}
 .tab{{padding:10px 14px;font-size:13px;font-weight:500;color:#64748b;border-bottom:2px solid transparent;cursor:pointer;transition:.15s;white-space:nowrap;text-decoration:none}}
 .tab:hover{{color:#c4b5fd}}.tab.active{{color:#c4b5fd;border-bottom-color:#7c3aed}}
+/* ── Active highlighting via CSS :checked (no JS needed) ── */
+#rt-analytics:checked~.cards label[for=rt-analytics],
+#rt-users:checked~.cards label[for=rt-users],
+#rt-watchlist:checked~.cards label[for=rt-watchlist],
+#rt-favorites:checked~.cards label[for=rt-favorites],
+#rt-reviews:checked~.cards label[for=rt-reviews],
+#rt-messages:checked~.cards label[for=rt-messages],
+#rt-insights:checked~.cards label[for=rt-insights]{{border-color:#7c3aed!important;background:linear-gradient(135deg,#18183a,#1a1040)!important;transform:translateY(-2px);box-shadow:0 0 0 1px rgba(124,58,237,.35),0 4px 16px rgba(124,58,237,.2)!important}}
+#rt-analytics:checked~.cards label[for=rt-analytics] .n,
+#rt-users:checked~.cards label[for=rt-users] .n,
+#rt-watchlist:checked~.cards label[for=rt-watchlist] .n,
+#rt-favorites:checked~.cards label[for=rt-favorites] .n,
+#rt-reviews:checked~.cards label[for=rt-reviews] .n,
+#rt-messages:checked~.cards label[for=rt-messages] .n,
+#rt-insights:checked~.cards label[for=rt-insights] .n{{color:#c4b5fd}}
+#rt-analytics:checked~.tabs label[for=rt-analytics],
+#rt-users:checked~.tabs label[for=rt-users],
+#rt-watchlist:checked~.tabs label[for=rt-watchlist],
+#rt-favorites:checked~.tabs label[for=rt-favorites],
+#rt-reviews:checked~.tabs label[for=rt-reviews],
+#rt-messages:checked~.tabs label[for=rt-messages],
+#rt-insights:checked~.tabs label[for=rt-insights]{{color:#c4b5fd!important;border-bottom:2px solid #7c3aed!important;font-weight:700!important}}
+
 .badge{{background:#e50914;color:#fff;border-radius:10px;padding:1px 6px;font-size:10px;font-weight:800;margin-left:4px}}
 .panel{{display:none;padding:14px 22px 40px}}
 .toolbar{{display:flex;align-items:center;gap:8px;margin-bottom:12px;flex-wrap:wrap}}
