@@ -754,33 +754,33 @@ label.card{{cursor:pointer}}label.tab{{cursor:pointer}}
 
 <!-- Stat Cards -->
 <div class="cards">
-  <label class="card{' active' if c['tab']=='analytics' else ''}" for="rt-analytics">
+  <label class="card" for="rt-analytics">
     <div class="n">&#128202;</div><div class="l">Analytics</div></label>
-  <label class="card{' active' if c['tab']=='users' else ''}" for="rt-users">
+  <label class="card" for="rt-users">
     <div class="n">{c['s_users']}</div><div class="l">Users</div></label>
-  <label class="card{' active' if c['tab']=='watchlist' else ''}" for="rt-watchlist">
+  <label class="card" for="rt-watchlist">
     <div class="n">{c['s_wl']}</div><div class="l">Watchlist</div></label>
-  <label class="card{' active' if c['tab']=='favorites' else ''}" for="rt-favorites">
+  <label class="card" for="rt-favorites">
     <div class="n">{c['s_fav']}</div><div class="l">Favorites</div></label>
-  <label class="card{' active' if c['tab']=='reviews' else ''}" for="rt-reviews">
+  <label class="card" for="rt-reviews">
     <div class="n">{c['s_rev']}</div><div class="l">Reviews</div></label>
-  <label class="card{' active' if c['tab']=='messages' else ''}" for="rt-messages">
+  <label class="card" for="rt-messages">
     <div class="n">{c['s_msg']}</div>
     <div class="l">Messages</div>
     <div class="s" style="color:{c['unread_color']}">{c['s_unread']} unread</div></label>
-  <label class="card{' active' if c['tab']=='insights' else ''}" for="rt-insights">
+  <label class="card" for="rt-insights">
     <div class="n">&#128200;</div><div class="l">Insights</div></label>
 </div>
 
 <!-- Tabs -->
 <div class="tabs">
-  <label class="tab{' active' if c['tab']=='analytics' else ''}" for="rt-analytics">&#128202; Analytics</label>
-  <label class="tab{' active' if c['tab']=='users' else ''}" for="rt-users">&#128100; Users ({c['s_users']})</label>
-  <label class="tab{' active' if c['tab']=='watchlist' else ''}" for="rt-watchlist">&#128203; Watchlist</label>
-  <label class="tab{' active' if c['tab']=='favorites' else ''}" for="rt-favorites">&#10084; Favorites</label>
-  <label class="tab{' active' if c['tab']=='reviews' else ''}" for="rt-reviews">&#128172; Reviews ({c['s_rev']})</label>
-  <label class="tab{' active' if c['tab']=='messages' else ''}" for="rt-messages">&#128233; Messages{c['unread_badge']}</label>
-  <label class="tab{' active' if c['tab']=='insights' else ''}" for="rt-insights">&#128200; Insights</label>
+  <label class="tab" for="rt-analytics">&#128202; Analytics</label>
+  <label class="tab" for="rt-users">&#128100; Users ({c['s_users']})</label>
+  <label class="tab" for="rt-watchlist">&#128203; Watchlist</label>
+  <label class="tab" for="rt-favorites">&#10084; Favorites</label>
+  <label class="tab" for="rt-reviews">&#128172; Reviews ({c['s_rev']})</label>
+  <label class="tab" for="rt-messages">&#128233; Messages{c['unread_badge']}</label>
+  <label class="tab" for="rt-insights">&#128200; Insights</label>
 </div>
 
 <!-- ANALYTICS -->
