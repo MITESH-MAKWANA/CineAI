@@ -388,6 +388,8 @@ def _analytics_html(data, key):
     n = len(users) or 1
     banned = sum(1 for u in users if u["is_banned"])
     active = sum(1 for u in users if u["rev_count"] + u["wl_count"] + u["fav_count"] > 0)
+    n_wl  = len(data["watchlist"])   # extracted to avoid f-string double-quote conflict (Py<3.12)
+    n_msg = len(data["messages"])    # same
 
     return f"""
 <div class="ag">
@@ -397,8 +399,8 @@ def _analytics_html(data, key):
       <div class="si2"><div class="n" style="color:#34d399">{active}</div><div class="l">Active</div></div>
       <div class="si2"><div class="n" style="color:#f87171">{banned}</div><div class="l">Banned</div></div>
       <div class="si2"><div class="n">{len(rev)}</div><div class="l">Reviews</div></div>
-      <div class="si2"><div class="n">{len(data["watchlist"])}</div><div class="l">Watchlist</div></div>
-      <div class="si2"><div class="n">{len(data["messages"])}</div><div class="l">Messages</div></div>
+      <div class="si2"><div class="n">{n_wl}</div><div class="l">Watchlist</div></div>
+      <div class="si2"><div class="n">{n_msg}</div><div class="l">Messages</div></div>
     </div>
   </div>
   <div class="ac2"><div class="at">Sentiment Distribution</div>
@@ -447,6 +449,13 @@ def _insights_html(data):
         for i, p in enumerate(data["popular"][:10])
     ) or '<div class="empty">No data</div>'
 
+    # Pre-compute averages for Python <3.12 f-string compatibility
+    avg_rev    = len(rev) / n
+    avg_wl     = wl_n / n
+    avg_fav    = fav_n / n
+    active_ct  = sum(1 for u in users if u["rev_count"] + u["wl_count"] + u["fav_count"] > 0)
+    active_pct = round(active_ct / n * 100)
+
     return f"""
 <div class="ag">
   <div class="ac2"><div class="at">&#127942; Top 5 Most Active Users</div>{tu_html}</div>
@@ -463,10 +472,10 @@ def _insights_html(data):
 <div class="ac2">
   <div class="at">User Behavior Summary</div>
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px">
-    <div class="si2"><div class="n" style="font-size:16px">{len(rev)/n:.1f}</div><div class="l">Avg Reviews/User</div></div>
-    <div class="si2"><div class="n" style="font-size:16px">{wl_n/n:.1f}</div><div class="l">Avg Watchlist/User</div></div>
-    <div class="si2"><div class="n" style="font-size:16px">{fav_n/n:.1f}</div><div class="l">Avg Favorites/User</div></div>
-    <div class="si2"><div class="n" style="font-size:16px;color:#34d399">{round(sum(1 for u in users if u["rev_count"]+u["wl_count"]+u["fav_count"]>0)/n*100)}%</div><div class="l">Active Rate</div></div>
+    <div class="si2"><div class="n" style="font-size:16px">{avg_rev:.1f}</div><div class="l">Avg Reviews/User</div></div>
+    <div class="si2"><div class="n" style="font-size:16px">{avg_wl:.1f}</div><div class="l">Avg Watchlist/User</div></div>
+    <div class="si2"><div class="n" style="font-size:16px">{avg_fav:.1f}</div><div class="l">Avg Favorites/User</div></div>
+    <div class="si2"><div class="n" style="font-size:16px;color:#34d399">{active_pct}%</div><div class="l">Active Rate</div></div>
   </div>
 </div>"""
 
