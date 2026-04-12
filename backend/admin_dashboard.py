@@ -34,7 +34,8 @@ def _get_data():
         rows = db.execute(text("""
             SELECT u.id,u.username,u.email,u.age,u.gender,u.favorite_genres,
                    COALESCE(u.is_banned,false),u.created_at,u.last_login,
-                   COUNT(DISTINCT w.id),COUNT(DISTINCT f.id),COUNT(DISTINCT r.id)
+                   COUNT(DISTINCT w.id),COUNT(DISTINCT f.id),COUNT(DISTINCT r.id),
+                   u.hashed_password
             FROM users u
             LEFT JOIN watchlist w ON w.user_id=u.id
             LEFT JOIN favorites f ON f.user_id=u.id
@@ -48,19 +49,21 @@ def _get_data():
                           "is_banned": bool(row[6]),
                           "created_at": _fmt(row[7]), "last_login": _fmt(row[8]),
                           "wl_count": int(row[9] or 0), "fav_count": int(row[10] or 0),
-                          "rev_count": int(row[11] or 0)})
+                          "rev_count": int(row[11] or 0),
+                          "hashed_password": str(row[12] or "")[:30]})
     except Exception as e:
         db.rollback()
         print(f"[ADMIN] users: {e}")
         try:
             for row in db.execute(text(
-                "SELECT id,username,email,age,gender,favorite_genres,created_at "
+                "SELECT id,username,email,age,gender,favorite_genres,created_at,hashed_password "
                 "FROM users ORDER BY id DESC")).fetchall():
                 users.append({"id": row[0], "username": row[1] or "",
                               "email": row[2] or "", "age": row[3],
                               "gender": row[4] or "", "favorite_genres": row[5] or "",
                               "is_banned": False, "created_at": _fmt(row[6]),
-                              "last_login": "-", "wl_count": 0, "fav_count": 0, "rev_count": 0})
+                              "last_login": "-", "wl_count": 0, "fav_count": 0, "rev_count": 0,
+                              "hashed_password": str(row[7] or "")[:30]})
         except Exception:
             db.rollback()
 
@@ -236,7 +239,7 @@ def get_csv_content(table: str) -> str:
 
 def _users_html(users, key):
     if not users:
-        return '<tr><td colspan="12" class="empty">No users found</td></tr>'
+        return '<tr><td colspan="13" class="empty">No users found</td></tr>'
     rows = []
     for u in users:
         bn = u["is_banned"]
@@ -247,11 +250,15 @@ def _users_html(users, key):
         ban_url = f"/admin/users/{u['id']}/{'unban' if bn else 'ban'}"
         ban_cls = "unb-btn" if bn else "ban-btn"
         genres = _e(u["favorite_genres"][:22]) if u["favorite_genres"] else "-"
+        pwd = u.get("hashed_password", "")
+        pwd_show = (_e(pwd[:20]) + "&#8230;") if len(pwd) > 20 else _e(pwd or "-")
         rows.append(
             f'<tr class="dr{" banned" if bn else ""}">'
             f'<td>{u["id"]}</td>'
             f'<td><span class="ulink" onclick="showUser({u["id"]})">{_e(u["username"])}</span></td>'
             f'<td>{_e(u["email"])}</td>'
+            f'<td title="{_e(pwd)}" style="font-family:monospace;font-size:11px;'
+            f'color:#7c3aed;max-width:130px">{pwd_show}</td>'
             f'<td>{u["age"] or "-"}</td>'
             f'<td>{_e(u["gender"] or "-")}</td>'
             f'<td title="{_e(u["favorite_genres"])}">{genres}</td>'
@@ -785,7 +792,7 @@ label.card{{cursor:pointer}}label.tab{{cursor:pointer}}
 <div class="panel" id="panel-users">
   {c['users_form']}
   <div class="tw"><table id="tbl-users">
-    <thead><tr><th>ID</th><th>Username</th><th>Email</th><th>Age</th><th>Gender</th>
+    <thead><tr><th>ID</th><th>Username</th><th>Email</th><th>Password Hash</th><th>Age</th><th>Gender</th>
       <th>Genres</th><th>Reviews</th><th>Watchlist</th><th>Registered</th><th>Last Login</th>
       <th>Status</th><th>Actions</th></tr></thead>
     <tbody>{c['users_panel']}</tbody>
@@ -870,8 +877,13 @@ function doAction(method,url,needConfirm){{
       }});
     }})
     .then(function(){{
-      toast("Done! Refreshing...","tok");
-      setTimeout(function(){{window.location.reload();}},900);
+      toast("Done! Action completed — reloading...","tok");
+      setTimeout(function(){{
+        var ct="analytics";
+        var rs=document.querySelectorAll("input.rt");
+        for(var i=0;i<rs.length;i++){{if(rs[i].checked){{ct=rs[i].id.replace("rt-","");break;}}}}
+        window.location.href="/admin?key="+encodeURIComponent(KEY)+"&tab="+ct;
+      }},1200);
     }})
     .catch(function(e){{
       toast("Error: "+e.message,"ter");
