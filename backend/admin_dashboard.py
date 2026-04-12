@@ -197,13 +197,16 @@ def get_csv_content(table: str) -> str:
     w = csv.writer(out, quoting=csv.QUOTE_ALL)
 
     if table == "users":
-        w.writerow(["ID", "Username", "Email", "Age", "Gender", "Genres",
-                    "Reviews", "Watchlist", "Favorites", "Registered", "Last Login", "Status"])
+        w.writerow(["ID", "Username", "Email", "Password Hash",
+                    "Age", "Gender", "Genres",
+                    "Reviews", "Watchlist", "Favorites",
+                    "Registered", "Last Login", "Status"])
         for u in data["users"]:
             st = "Banned" if u["is_banned"] else (
                 "Active" if u["rev_count"] + u["wl_count"] + u["fav_count"] > 0 else "Inactive")
-            w.writerow([u["id"], u["username"], u["email"], u["age"] or "",
-                        u["gender"], u["favorite_genres"],
+            w.writerow([u["id"], u["username"], u["email"],
+                        u.get("hashed_password", ""),
+                        u["age"] or "", u["gender"], u["favorite_genres"],
                         u["rev_count"], u["wl_count"], u["fav_count"],
                         u["created_at"], u["last_login"], st])
 
@@ -239,16 +242,13 @@ def get_csv_content(table: str) -> str:
 
 def _users_html(users, key):
     if not users:
-        return '<tr><td colspan="13" class="empty">No users found</td></tr>'
+        return '<tr><td colspan="12" class="empty">No users found</td></tr>'
     rows = []
     for u in users:
         bn = u["is_banned"]
         act = u["rev_count"] + u["wl_count"] + u["fav_count"] > 0
         status = "banned" if bn else ("active" if act else "inactive")
         status_label = "Banned" if bn else ("Active" if act else "Inactive")
-        ban_lbl = "Unban" if bn else "Ban"
-        ban_url = f"/admin/users/{u['id']}/{'unban' if bn else 'ban'}"
-        ban_cls = "unb-btn" if bn else "ban-btn"
         genres = _e(u["favorite_genres"][:22]) if u["favorite_genres"] else "-"
         pwd = u.get("hashed_password", "")
         pwd_show = (_e(pwd[:20]) + "&#8230;") if len(pwd) > 20 else _e(pwd or "-")
@@ -267,12 +267,6 @@ def _users_html(users, key):
             f'<td>{u["created_at"]}</td>'
             f'<td>{u["last_login"]}</td>'
             f'<td><span class="sb {status}">{status_label}</span></td>'
-            f'<td style="white-space:nowrap">'
-            f'<button type="button" class="ba {ban_cls}" '
-            f'onclick="doAction(\'POST\',\'{ban_url}\')">{ban_lbl}</button>'
-            f'<button type="button" class="ba del-btn" '
-            f'onclick="doAction(\'DELETE\',\'/admin/users/{u["id"]}\',true)">Del</button>'
-            f'</td>'
             f'</tr>'
         )
     return "\n".join(rows)
@@ -794,7 +788,7 @@ label.card{{cursor:pointer}}label.tab{{cursor:pointer}}
   <div class="tw"><table id="tbl-users">
     <thead><tr><th>ID</th><th>Username</th><th>Email</th><th>Password Hash</th><th>Age</th><th>Gender</th>
       <th>Genres</th><th>Reviews</th><th>Watchlist</th><th>Registered</th><th>Last Login</th>
-      <th>Status</th><th>Actions</th></tr></thead>
+      <th>Status</th></tr></thead>
     <tbody>{c['users_panel']}</tbody>
   </table></div>
 </div>
