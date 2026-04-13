@@ -3,8 +3,10 @@ Auth Routes — Register, Login, Profile, Genre Update
 """
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
+from sqlalchemy import text
 from pydantic import BaseModel
 from typing import List, Optional
+from datetime import datetime, timezone
 from database import get_db
 from models.user import User
 from auth_utils import hash_password, verify_password, create_access_token, decode_token
@@ -80,6 +82,13 @@ def register(data: RegisterRequest, db: Session = Depends(get_db)):
     db.add(user)
     db.commit()
     db.refresh(user)
+    # Mark user online immediately (registration = auto-login)
+    try:
+        db.execute(text("UPDATE users SET is_online=true, last_login=:now WHERE id=:id"),
+                   {"now": datetime.now(timezone.utc), "id": user.id})
+        db.commit()
+    except Exception:
+        db.rollback()  # non-fatal — column may not exist yet on first deploy
     token = create_access_token({"sub": str(user.id), "username": user.username})
     return {
         "access_token": token,
@@ -102,6 +111,13 @@ def login(data: LoginRequest, db: Session = Depends(get_db)):
     user = db.query(User).filter(User.email == data.email.lower().strip()).first()
     if not user or not verify_password(data.password, user.hashed_password):
         raise HTTPException(status_code=401, detail="Invalid email or password")
+    # Mark user as online + record last login time
+    try:
+        db.execute(text("UPDATE users SET is_online=true, last_login=:now WHERE id=:id"),
+                   {"now": datetime.now(timezone.utc), "id": user.id})
+        db.commit()
+    except Exception:
+        db.rollback()  # non-fatal
     token = create_access_token({"sub": str(user.id), "username": user.username})
     return {
         "access_token": token,
@@ -117,6 +133,18 @@ def login(data: LoginRequest, db: Session = Depends(get_db)):
             "onboarding_done": bool(user.onboarding_done)
         }
     }
+
+
+@router.post("/logout")
+def logout(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    """Mark user as offline. Frontend should call this before clearing the JWT."""
+    try:
+        db.execute(text("UPDATE users SET is_online=false WHERE id=:id"),
+                   {"id": current_user.id})
+        db.commit()
+    except Exception:
+        db.rollback()  # non-fatal
+    return {"message": "Logged out successfully"}
 
 
 @router.get("/me")

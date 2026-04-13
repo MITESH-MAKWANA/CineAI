@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect, useCallback } from 'react'
-import { loginUser, registerUser, getMe } from '../api/auth'
+import { loginUser, registerUser, getMe, logoutUser as apiLogout } from '../api/auth'
 
 const AuthContext = createContext(null)
 
@@ -56,6 +56,8 @@ export function AuthProvider({ children }) {
   // Listen for 401 session-expiry events from axiosInstance
   useEffect(() => {
     const handler = () => {
+      // Best-effort: tell backend this session is gone
+      apiLogout()
       setToken(null)
       setUser(null)
     }
@@ -75,7 +77,10 @@ export function AuthProvider({ children }) {
     return data
   }, [])
 
-  const logout = useCallback(() => { clearAuth() }, [])
+  const logout = useCallback(() => {
+    apiLogout() // fire-and-forget — sets is_online=false on server
+    clearAuth()
+  }, [])
 
   const updateUserGenres = useCallback((genres, skippedGenres) => {
     setUser(prev => {

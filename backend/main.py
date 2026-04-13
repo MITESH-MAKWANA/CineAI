@@ -23,13 +23,32 @@ async def lifespan(app: FastAPI):
         create_all_tables()
     except Exception as e:
         print(f"[WARN] DB init: {e}")
+    # ── Auto-migrate: add is_online column if missing ──────────────────────────
+    try:
+        from database import SessionLocal
+        from sqlalchemy import text as _text
+        _db = SessionLocal()
+        try:
+            _db.execute(_text(
+                "ALTER TABLE users ADD COLUMN IF NOT EXISTS "
+                "is_online BOOLEAN NOT NULL DEFAULT FALSE"
+            ))
+            _db.commit()
+            print("[OK] is_online column ensured.")
+        except Exception as _ce:
+            _db.rollback()
+            print(f"[WARN] is_online migration: {_ce}")
+        finally:
+            _db.close()
+    except Exception as _me:
+        print(f"[WARN] Migration startup: {_me}")
+    # ──────────────────────────────────────────────────────────────────────────
     try:
         from ml.sentiment_engine import SentimentEngine
         app.state.sentiment = SentimentEngine()
         print("[OK] Sentiment engine ready.")
     except Exception as e:
         print(f"[WARN] Sentiment engine startup: {e}")
-    # Recommender loads lazily on first request to avoid startup timeout
     yield
     print(f"[STOP] {APP_NAME} shutting down.")
 

@@ -18,6 +18,7 @@ class User(Base):
     onboarding_done = Column(Integer, default=0)
     avatar_url      = Column(String(500), default="")
     is_banned       = Column(Boolean, default=False, nullable=False)
+    is_online       = Column(Boolean, default=False, nullable=False)
     created_at      = Column(DateTime(timezone=True), server_default=func.now())
     updated_at      = Column(DateTime(timezone=True), onupdate=func.now())
     last_login      = Column(DateTime(timezone=True), nullable=True)
