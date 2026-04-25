@@ -23,21 +23,34 @@ async def lifespan(app: FastAPI):
         create_all_tables()
     except Exception as e:
         print(f"[WARN] DB init: {e}")
-    # ── Auto-migrate: add is_online column if missing ──────────────────────────
+    # ── Auto-migrate: add missing columns + ensure all tables exist ─────────────
     try:
         from database import SessionLocal
         from sqlalchemy import text as _text
         _db = SessionLocal()
         try:
+            # Ensure is_online column exists on users
             _db.execute(_text(
                 "ALTER TABLE users ADD COLUMN IF NOT EXISTS "
                 "is_online BOOLEAN NOT NULL DEFAULT FALSE"
             ))
+            # Ensure contact_messages table exists
+            _db.execute(_text("""
+                CREATE TABLE IF NOT EXISTS contact_messages (
+                    id         SERIAL PRIMARY KEY,
+                    name       VARCHAR(120) NOT NULL,
+                    email      VARCHAR(120) NOT NULL,
+                    subject    VARCHAR(255) DEFAULT '',
+                    message    TEXT NOT NULL,
+                    is_read    BOOLEAN DEFAULT FALSE,
+                    created_at TIMESTAMPTZ DEFAULT NOW()
+                )
+            """))
             _db.commit()
-            print("[OK] is_online column ensured.")
+            print("[OK] is_online column + contact_messages table ensured.")
         except Exception as _ce:
             _db.rollback()
-            print(f"[WARN] is_online migration: {_ce}")
+            print(f"[WARN] Startup migration: {_ce}")
         finally:
             _db.close()
     except Exception as _me:

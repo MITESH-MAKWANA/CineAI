@@ -456,7 +456,7 @@ def _insights_html(data):
     avg_rev    = len(rev) / n
     avg_wl     = wl_n / n
     avg_fav    = fav_n / n
-    active_ct  = sum(1 for u in users if u["rev_count"] + u["wl_count"] + u["fav_count"] > 0)
+    active_ct  = sum(1 for u in users if u.get("is_online", False))
     active_pct = round(active_ct / n * 100)
 
     return f"""
