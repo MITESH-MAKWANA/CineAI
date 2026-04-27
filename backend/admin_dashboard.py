@@ -318,12 +318,13 @@ def _messages_html(messages, key):
         msg = m["message"]
         preview = _e(msg[:80] + "..." if len(msg) > 80 else msg)
         is_read = m["is_read"]
+        mid = m["id"]  # extract to avoid f-string quote conflict
         read_btn = ("" if is_read else
                     f'<button type="button" class="ba rd-btn" '
-                    f'onclick="doAction(\'POST\',\'/admin/messages/{m["id"]}/read\')">'
+                    f'onclick="doAction(&quot;POST&quot;,&quot;/admin/messages/{mid}/read&quot;)">'
                     f'Mark Read</button>')
         del_btn = (f'<button type="button" class="ba del-btn" '
-                   f'onclick="doAction(\'DELETE\',\'/admin/messages/{m["id"]}\',true)">'
+                   f'onclick="doAction(&quot;DELETE&quot;,&quot;/admin/messages/{mid}&quot;,true)">'
                    f'Del</button>')
         rows.append(
             f'<tr class="dr{" unread" if not is_read else ""}">'
@@ -390,7 +391,7 @@ def _analytics_html(data, key):
     neu = sum(1 for r in rev if r["sentiment"] == "neutral")
     n = len(users) or 1
     banned = sum(1 for u in users if u["is_banned"])
-    active = sum(1 for u in users if u["rev_count"] + u["wl_count"] + u["fav_count"] > 0)
+    active = sum(1 for u in users if u.get("is_online", False))  # currently logged-in users
     n_wl  = len(data["watchlist"])   # extracted to avoid f-string double-quote conflict (Py<3.12)
     n_msg = len(data["messages"])    # same
 
