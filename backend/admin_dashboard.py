@@ -318,13 +318,13 @@ def _messages_html(messages, key):
         msg = m["message"]
         preview = _e(msg[:80] + "..." if len(msg) > 80 else msg)
         is_read = m["is_read"]
-        mid = m["id"]  # extract to avoid f-string quote conflict
+        mid = m["id"]  # integer — no quoting needed in onclick
         read_btn = ("" if is_read else
                     f'<button type="button" class="ba rd-btn" '
-                    f'onclick="doAction(&quot;POST&quot;,&quot;/admin/messages/{mid}/read&quot;)">'
+                    f'onclick="markMsg({mid})">'
                     f'Mark Read</button>')
         del_btn = (f'<button type="button" class="ba del-btn" '
-                   f'onclick="doAction(&quot;DELETE&quot;,&quot;/admin/messages/{mid}&quot;,true)">'
+                   f'onclick="deleteMsg({mid})">'
                    f'Del</button>')
         rows.append(
             f'<tr class="dr{" unread" if not is_read else ""}">'
@@ -864,8 +864,6 @@ function toast(msg,cls){{
 // Admin actions (ban/delete/read) — AJAX, no page reload needed for search
 function doAction(method,url,needConfirm){{
   if(needConfirm&&!confirm("Are you sure? This cannot be undone.")) return;
-  var btn=event.currentTarget||event.target;
-  if(btn){{btn.disabled=true;btn.textContent="...";}}
   fetch(url+"?key="+encodeURIComponent(KEY),{{method:method}})
     .then(function(r){{
       return r.json().then(function(d){{
@@ -874,7 +872,7 @@ function doAction(method,url,needConfirm){{
       }});
     }})
     .then(function(){{
-      toast("Done! Action completed — reloading...","tok");
+      toast("Done! Reloading...","tok");
       setTimeout(function(){{
         var ct="analytics";
         var rs=document.querySelectorAll("input.rt");
@@ -882,10 +880,29 @@ function doAction(method,url,needConfirm){{
         window.location.href="/admin?key="+encodeURIComponent(KEY)+"&tab="+ct;
       }},1200);
     }})
-    .catch(function(e){{
-      toast("Error: "+e.message,"ter");
-      if(btn){{btn.disabled=false;btn.textContent=btn.getAttribute("data-orig")||"Action";}}
-    }});
+    .catch(function(e){{toast("Error: "+e.message,"ter");}});
+}}
+
+// Dedicated message helpers — no string quoting in onclick needed
+function markMsg(id){{
+  fetch("/admin/messages/"+id+"/read?key="+encodeURIComponent(KEY),{{method:"POST"}})
+    .then(function(r){{return r.json();}})
+    .then(function(){{
+      toast("Message marked as read!","tok");
+      setTimeout(function(){{window.location.href="/admin?key="+encodeURIComponent(KEY)+"&tab=messages";}},1000);
+    }})
+    .catch(function(e){{toast("Error: "+e.message,"ter");}});
+}}
+
+function deleteMsg(id){{
+  if(!confirm("Delete this message? This cannot be undone.")) return;
+  fetch("/admin/messages/"+id+"?key="+encodeURIComponent(KEY),{{method:"DELETE"}})
+    .then(function(r){{return r.json();}})
+    .then(function(){{
+      toast("Message deleted!","tok");
+      setTimeout(function(){{window.location.href="/admin?key="+encodeURIComponent(KEY)+"&tab=messages";}},1000);
+    }})
+    .catch(function(e){{toast("Error: "+e.message,"ter");}});
 }}
 
 // User detail modal
