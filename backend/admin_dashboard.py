@@ -936,18 +936,41 @@ function showUser(uid){{
     }}).join(""):"")
     +"<div class='mra'>"
     +(u.is_banned
-      ?"<button type='button' class='ba unb-btn' style='padding:6px 14px;font-size:13px' onclick='doAction(\"POST\",\"/admin/users/"+u.id+"/unban\")'>&#9989; Unban</button>"
-      :"<button type='button' class='ba ban-btn' style='padding:6px 14px;font-size:13px' onclick='doAction(\"POST\",\"/admin/users/"+u.id+"/ban\")'>&#128683; Ban</button>")
-    +"<button type='button' class='ba del-btn' style='padding:6px 14px;font-size:13px' onclick='doAction(\"DELETE\",\"/admin/users/"+u.id+"\",true)'>&#128465; Delete</button>"
+      ?"<button type='button' class='ba unb-btn' style='padding:6px 14px;font-size:13px' onclick='unbanUser("+u.id+")'>&#9989; Unban</button>"
+      :"<button type='button' class='ba ban-btn' style='padding:6px 14px;font-size:13px' onclick='banUser("+u.id+")'>&#128683; Ban</button>")
+    +"<button type='button' class='ba del-btn' style='padding:6px 14px;font-size:13px' onclick='deleteUser("+u.id+")'>&#128465; Delete</button>"
     +"</div>";
   q("modal-content").innerHTML=h;
   q("userModal").classList.add("open");
 }}
 function closeModal(){{q("userModal").classList.remove("open");}}
+
+// User action helpers — integer IDs, no string quoting in onclick
+function banUser(id){{
+  if(!confirm("Ban this user?")) return;
+  fetch("/admin/users/"+id+"/ban?key="+encodeURIComponent(KEY),{{method:"POST"}})
+    .then(function(r){{return r.json();}})
+    .then(function(){{toast("User banned!","tok");setTimeout(function(){{window.location.href="/admin?key="+encodeURIComponent(KEY)+"&tab=users";}},1000);}})
+    .catch(function(e){{toast("Error: "+e.message,"ter");}});
+}}
+function unbanUser(id){{
+  fetch("/admin/users/"+id+"/unban?key="+encodeURIComponent(KEY),{{method:"POST"}})
+    .then(function(r){{return r.json();}})
+    .then(function(){{toast("User unbanned!","tok");setTimeout(function(){{window.location.href="/admin?key="+encodeURIComponent(KEY)+"&tab=users";}},1000);}})
+    .catch(function(e){{toast("Error: "+e.message,"ter");}});
+}}
+function deleteUser(id){{
+  if(!confirm("Delete this user permanently? This cannot be undone.")) return;
+  fetch("/admin/users/"+id+"?key="+encodeURIComponent(KEY),{{method:"DELETE"}})
+    .then(function(r){{return r.json();}})
+    .then(function(){{toast("User deleted!","tok");setTimeout(function(){{window.location.href="/admin?key="+encodeURIComponent(KEY)+"&tab=users";}},1000);}})
+    .catch(function(e){{toast("Error: "+e.message,"ter");}});
+}}
 </script></body></html>"""
 
 
-# ─── Static page ──────────────────────────────────────────────────────────────
+# \u2500\u2500\u2500 Static page \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+
 
 LOGIN_HTML = """<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>CineAI Admin</title>
 <style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:'Segoe UI',sans-serif;background:#080812;color:#e2e8f0;display:flex;align-items:center;justify-content:center;min-height:100vh}.card{background:#0f0f22;border:1px solid #252545;border-radius:18px;padding:52px 44px;text-align:center;width:400px;box-shadow:0 24px 64px rgba(0,0,0,.7)}h1{font-size:26px;font-weight:800;margin-bottom:8px}p{color:#64748b;font-size:13px;margin-bottom:32px}input{width:100%;padding:14px 16px;background:#080812;border:1px solid #2d2d5e;border-radius:10px;color:#e2e8f0;font-size:15px;margin-bottom:16px;outline:none;letter-spacing:2px}input:focus{border-color:#7c3aed}button{width:100%;padding:14px;background:linear-gradient(135deg,#6c3ef4,#e040fb);color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer}</style></head><body>

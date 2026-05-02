@@ -62,6 +62,19 @@ async def lifespan(app: FastAPI):
         print("[OK] Sentiment engine ready.")
     except Exception as e:
         print(f"[WARN] Sentiment engine startup: {e}")
+        
+    # ── Print Local Links for Easy Access ─────────────────────────────────────
+    print("\n" + "="*60)
+    print("🚀 CineAI Backend Running Local Links:")
+    print("="*60)
+    print("🏠 Frontend App       : http://localhost:5173")
+    print("⚙️  Backend Server     : http://127.0.0.1:8000")
+    print("📖 Swagger API Docs   : http://127.0.0.1:8000/docs")
+    print("📘 ReDoc API Docs     : http://127.0.0.1:8000/redoc")
+    print("🔐 Admin Dashboard    : http://127.0.0.1:8000/admin?key=cineai-admin-2024")
+    print("❤️  Health Check       : http://127.0.0.1:8000/health")
+    print("="*60 + "\n")
+        
     yield
     print(f"[STOP] {APP_NAME} shutting down.")
 
