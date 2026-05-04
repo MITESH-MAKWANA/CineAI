@@ -65,6 +65,22 @@ export function AuthProvider({ children }) {
     return () => window.removeEventListener('cineai:session-expired', handler)
   }, [])
 
+  // Mark user offline when tab is closed or browser is shut
+  useEffect(() => {
+    const markOffline = () => {
+      const t = localStorage.getItem('cineai_token')
+      if (!t) return
+      // Use sendBeacon so the request fires even as the page unloads
+      const url = `${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/auth/logout`
+      const blob = new Blob([], { type: 'application/json' })
+      navigator.sendBeacon
+        ? navigator.sendBeacon(url, blob)
+        : fetch(url, { method: 'POST', headers: { Authorization: `Bearer ${t}` }, keepalive: true })
+    }
+    window.addEventListener('beforeunload', markOffline)
+    return () => window.removeEventListener('beforeunload', markOffline)
+  }, [])
+
   const login = useCallback(async (email, password) => {
     const { data } = await loginUser(email, password)
     saveAuth(data.access_token, data.user)

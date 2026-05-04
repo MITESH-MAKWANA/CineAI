@@ -8,12 +8,13 @@ Admin Dashboard v3 — 100% Server-Side Rendered
 """
 import html as _html
 import io, csv, os, json
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 from sqlalchemy import text
 from database import SessionLocal
 
 ADMIN_SECRET = os.getenv("ADMIN_SECRET", "cineai-admin-2024")
 TMDB = "https://image.tmdb.org/t/p/w92"
+_IST = timezone(timedelta(hours=5, minutes=30))  # UTC+5:30
 
 
 # ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -22,7 +23,18 @@ def _e(v):
     return _html.escape(str(v) if v is not None else "")
 
 def _fmt(dt):
-    return str(dt)[:16].replace("T", " ") if dt else "-"
+    """Format a datetime as IST (UTC+5:30). Handles aware/naive/string inputs."""
+    if not dt:
+        return "-"
+    try:
+        if isinstance(dt, str):
+            dt = datetime.fromisoformat(dt.replace(" ", "T"))
+        if hasattr(dt, 'tzinfo') and dt.tzinfo is not None:
+            return dt.astimezone(_IST).strftime("%d %b %Y  %H:%M IST")
+        else:  # naive — assume UTC
+            return (dt + timedelta(hours=5, minutes=30)).strftime("%d %b %Y  %H:%M IST")
+    except Exception:
+        return str(dt)[:16].replace("T", " ")
 
 
 # ─── Data Fetching ────────────────────────────────────────────────────────────
@@ -100,14 +112,29 @@ def _get_data():
         db.rollback()
 
     try:
+        # Ensure table exists first, then query
+        db.execute(text("""
+            CREATE TABLE IF NOT EXISTS contact_messages (
+                id         SERIAL PRIMARY KEY,
+                name       VARCHAR(120) NOT NULL,
+                email      VARCHAR(120) NOT NULL,
+                subject    VARCHAR(255) DEFAULT '',
+                message    TEXT NOT NULL,
+                is_read    BOOLEAN DEFAULT FALSE,
+                created_at TIMESTAMPTZ DEFAULT NOW()
+            )
+        """))
+        db.commit()
         for row in db.execute(text(
                 "SELECT id,name,email,subject,message,is_read,created_at "
                 "FROM contact_messages ORDER BY created_at DESC")).fetchall():
             msgs.append({"id": row[0], "name": row[1] or "", "email": row[2] or "",
                          "subject": row[3] or "", "message": row[4] or "",
                          "is_read": bool(row[5]), "created_at": _fmt(row[6])})
-    except Exception:
+        print(f"[ADMIN] Loaded {len(msgs)} contact messages")
+    except Exception as e:
         db.rollback()
+        print(f"[ADMIN] contact_messages error: {e}")
 
     try:
         rows = db.execute(text("""
