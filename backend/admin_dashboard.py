@@ -365,96 +365,71 @@ def _messages_html(messages, key):
     return "\n".join(rows)
 
 
-# ─── SVG Pie Chart Builders ─────────────────────────────────────────────────
-
-def _pie_svg(segments, colors, labels, size=220):
-    """Pure-Python SVG pie chart — no JS, no CDN."""
-    total = sum(segments) or 1
-    cx = cy = r = size // 2 - 4
-    cx = cy = size // 2
-    r  = size // 2 - 18
-    paths = []
-    start = -math.pi / 2          # start from 12-o-clock
-    for count, color in zip(segments, colors):
-        if count <= 0:
-            start_save = start
-            continue
-        pct = count / total
-        end = start + 2 * math.pi * pct
-        x1 = cx + r * math.cos(start)
-        y1 = cy + r * math.sin(start)
-        x2 = cx + r * math.cos(end)
-        y2 = cy + r * math.sin(end)
-        large = 1 if (end - start) > math.pi else 0
-        if pct >= 0.9999:
-            # Full circle — arc trick
-            d = (f"M {cx} {cy-r} A {r} {r} 0 1 1 {cx-0.01:.2f} {cy-r} Z")
-        else:
-            d = (f"M {cx:.1f} {cy:.1f} "
-                 f"L {x1:.1f} {y1:.1f} "
-                 f"A {r} {r} 0 {large} 1 {x2:.1f} {y2:.1f} Z")
-        paths.append(f'<path d="{d}" fill="{color}" stroke="#0a0a1a" stroke-width="2"/>')
-        # Percentage label inside slice
-        mid = start + (end - start) / 2
-        lx = cx + r * 0.62 * math.cos(mid)
-        ly = cy + r * 0.62 * math.sin(mid)
-        p = round(pct * 100)
-        if p >= 6:
-            paths.append(
-                f'<text x="{lx:.1f}" y="{ly:.1f}" text-anchor="middle" '
-                f'dominant-baseline="middle" fill="white" '
-                f'font-size="11" font-weight="700">{p}%</text>'
-            )
-        start = end
-    svg = (
-        f'<svg width="{size}" height="{size}" viewBox="0 0 {size} {size}" '
-        f'style="display:block;margin:0 auto">'
-        + "".join(paths)
-        + "</svg>"
-    )
-    # Legend
-    leg = []
-    for count, color, label in zip(segments, colors, labels):
-        if count <= 0:
-            continue
-        p = round(count / total * 100)
-        leg.append(
-            f'<div style="display:flex;align-items:center;gap:5px;margin:2px 6px">'
-            f'<span style="display:inline-block;width:11px;height:11px;border-radius:2px;'
-            f'background:{color};flex-shrink:0"></span>'
-            f'<span style="font-size:11px;color:#94a3b8">{label}: {count} ({p}%)</span>'
-            f'</div>'
-        )
-    legend = ('<div style="display:flex;flex-wrap:wrap;justify-content:center;margin-top:6px">'
-              + "".join(leg) + "</div>")
-    return svg + legend
-
+# ─── Bar Chart Builders ───────────────────────────────────────────────────────
 
 def _sentiment_chart_html(pos, neg, neu):
     total = pos + neg + neu
     if total == 0:
         return '<div class="empty">No review data yet</div>'
-    return _pie_svg(
-        [pos, neg, neu],
-        ["#10b981", "#ef4444", "#94a3b8"],
-        ["Positive", "Negative", "Neutral"]
-    )
-
-
-_PIE_COLORS = [
-    "#6d28d9","#e5091a","#10b981","#f59e0b","#3b82f6",
-    "#ec4899","#14b8a6","#f97316","#8b5cf6","#06b6d4",
-]
+    bars = [
+        (pos, "#10b981", "Positive",  "rgba(16,185,129,0.15)"),
+        (neg, "#ef4444", "Negative",  "rgba(239,68,68,0.15)"),
+        (neu, "#94a3b8", "Neutral",   "rgba(148,163,184,0.1)"),
+    ]
+    html = []
+    for count, color, label, bg in bars:
+        pct = round(count / total * 100)
+        html.append(
+            f'<div style="margin-bottom:14px;padding:10px 12px;background:{bg};'
+            f'border-radius:8px;border-left:3px solid {color}">'
+            f'<div style="display:flex;justify-content:space-between;'
+            f'font-size:12px;margin-bottom:7px">'
+            f'<span style="color:{color};font-weight:700">{label}</span>'
+            f'<span style="color:#e2e8f0;font-weight:600">{count} &nbsp;<span style="color:#64748b">({pct}%)</span></span>'
+            f'</div>'
+            f'<div style="background:#0d0d20;border-radius:6px;height:20px;overflow:hidden">'
+            f'<div style="width:{pct}%;height:100%;border-radius:6px;'
+            f'background:linear-gradient(90deg,{color}cc,{color});'
+            f'transition:width 0.6s ease;display:flex;align-items:center;'
+            f'justify-content:flex-end;padding-right:6px">'
+            f'<span style="font-size:10px;color:white;font-weight:700">'
+            f'{"" if pct < 12 else str(pct)+"%"}</span>'
+            f'</div></div></div>'
+        )
+    return "".join(html)
 
 
 def _popular_chart_html(popular):
     if not popular:
         return '<div class="empty">No watchlist/favorites data yet</div>'
-    items = popular[:10]
-    counts = [p["count"] for p in items]
-    labels = [p["title"][:22] + ("…" if len(p["title"]) > 22 else "") for p in items]
-    colors = _PIE_COLORS[:len(items)]
-    return _pie_svg(counts, colors, labels, size=240)
+    items   = popular[:10]
+    max_cnt = items[0]["count"] if items else 1
+    colors  = [
+        "#6d28d9","#e5091a","#10b981","#f59e0b","#3b82f6",
+        "#ec4899","#14b8a6","#f97316","#8b5cf6","#06b6d4",
+    ]
+    rows = []
+    for i, p in enumerate(items):
+        pct   = round(p["count"] / max_cnt * 100)
+        color = colors[i % len(colors)]
+        title = _e(p["title"][:28] + ("…" if len(p["title"]) > 28 else ""))
+        rows.append(
+            f'<div style="margin-bottom:10px">'
+            f'<div style="display:flex;justify-content:space-between;'
+            f'font-size:11px;margin-bottom:4px;align-items:center">'
+            f'<span style="color:#94a3b8">'
+            f'<span style="color:{color};font-weight:700;margin-right:5px">#{i+1}</span>'
+            f'{title}</span>'
+            f'<span style="color:#e2e8f0;font-weight:700;min-width:32px;text-align:right">'
+            f'{p["count"]}</span>'
+            f'</div>'
+            f'<div style="background:#0d0d20;border-radius:5px;height:16px;overflow:hidden">'
+            f'<div style="width:{pct}%;height:100%;border-radius:5px;'
+            f'background:linear-gradient(90deg,{color}99,{color});'
+            f'transition:width 0.6s ease"></div>'
+            f'</div></div>'
+        )
+    return "".join(rows)
 
 
 def _analytics_html(data, key):
