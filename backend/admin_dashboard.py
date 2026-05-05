@@ -7,7 +7,7 @@ Admin Dashboard v3 — 100% Server-Side Rendered
 - Tab switching:   CSS radio-button (no JS)
 """
 import html as _html
-import io, csv, os, json
+import io, csv, os, json, math
 from datetime import datetime, timezone, timedelta
 from sqlalchemy import text
 from database import SessionLocal
@@ -365,47 +365,96 @@ def _messages_html(messages, key):
     return "\n".join(rows)
 
 
-# ─── CSS Chart Builders (no Chart.js, no CDN) ─────────────────────────────────
+# ─── SVG Pie Chart Builders ─────────────────────────────────────────────────
+
+def _pie_svg(segments, colors, labels, size=220):
+    """Pure-Python SVG pie chart — no JS, no CDN."""
+    total = sum(segments) or 1
+    cx = cy = r = size // 2 - 4
+    cx = cy = size // 2
+    r  = size // 2 - 18
+    paths = []
+    start = -math.pi / 2          # start from 12-o-clock
+    for count, color in zip(segments, colors):
+        if count <= 0:
+            start_save = start
+            continue
+        pct = count / total
+        end = start + 2 * math.pi * pct
+        x1 = cx + r * math.cos(start)
+        y1 = cy + r * math.sin(start)
+        x2 = cx + r * math.cos(end)
+        y2 = cy + r * math.sin(end)
+        large = 1 if (end - start) > math.pi else 0
+        if pct >= 0.9999:
+            # Full circle — arc trick
+            d = (f"M {cx} {cy-r} A {r} {r} 0 1 1 {cx-0.01:.2f} {cy-r} Z")
+        else:
+            d = (f"M {cx:.1f} {cy:.1f} "
+                 f"L {x1:.1f} {y1:.1f} "
+                 f"A {r} {r} 0 {large} 1 {x2:.1f} {y2:.1f} Z")
+        paths.append(f'<path d="{d}" fill="{color}" stroke="#0a0a1a" stroke-width="2"/>')
+        # Percentage label inside slice
+        mid = start + (end - start) / 2
+        lx = cx + r * 0.62 * math.cos(mid)
+        ly = cy + r * 0.62 * math.sin(mid)
+        p = round(pct * 100)
+        if p >= 6:
+            paths.append(
+                f'<text x="{lx:.1f}" y="{ly:.1f}" text-anchor="middle" '
+                f'dominant-baseline="middle" fill="white" '
+                f'font-size="11" font-weight="700">{p}%</text>'
+            )
+        start = end
+    svg = (
+        f'<svg width="{size}" height="{size}" viewBox="0 0 {size} {size}" '
+        f'style="display:block;margin:0 auto">'
+        + "".join(paths)
+        + "</svg>"
+    )
+    # Legend
+    leg = []
+    for count, color, label in zip(segments, colors, labels):
+        if count <= 0:
+            continue
+        p = round(count / total * 100)
+        leg.append(
+            f'<div style="display:flex;align-items:center;gap:5px;margin:2px 6px">'
+            f'<span style="display:inline-block;width:11px;height:11px;border-radius:2px;'
+            f'background:{color};flex-shrink:0"></span>'
+            f'<span style="font-size:11px;color:#94a3b8">{label}: {count} ({p}%)</span>'
+            f'</div>'
+        )
+    legend = ('<div style="display:flex;flex-wrap:wrap;justify-content:center;margin-top:6px">'
+              + "".join(leg) + "</div>")
+    return svg + legend
+
 
 def _sentiment_chart_html(pos, neg, neu):
     total = pos + neg + neu
     if total == 0:
         return '<div class="empty">No review data yet</div>'
-    def bar(count, color, label):
-        pct = round(count / total * 100)
-        return (f'<div style="margin-bottom:12px">'
-                f'<div style="display:flex;justify-content:space-between;'
-                f'font-size:12px;margin-bottom:4px">'
-                f'<span style="color:{color};font-weight:600">{label}</span>'
-                f'<span style="color:#94a3b8">{count} ({pct}%)</span></div>'
-                f'<div style="background:#0d0d20;border-radius:4px;height:18px">'
-                f'<div style="width:{pct}%;background:{color};height:100%;'
-                f'border-radius:4px;transition:width .4s"></div></div></div>')
-    return (bar(pos, "#10b981", "Positive") +
-            bar(neg, "#ef4444", "Negative") +
-            bar(neu, "#94a3b8", "Neutral"))
+    return _pie_svg(
+        [pos, neg, neu],
+        ["#10b981", "#ef4444", "#94a3b8"],
+        ["Positive", "Negative", "Neutral"]
+    )
+
+
+_PIE_COLORS = [
+    "#6d28d9","#e5091a","#10b981","#f59e0b","#3b82f6",
+    "#ec4899","#14b8a6","#f97316","#8b5cf6","#06b6d4",
+]
 
 
 def _popular_chart_html(popular):
     if not popular:
         return '<div class="empty">No watchlist/favorites data yet</div>'
-    max_count = popular[0]["count"] if popular else 1
-    items = []
-    for i, p in enumerate(popular[:10]):
-        pct = round(p["count"] / max_count * 100)
-        items.append(
-            f'<div style="margin-bottom:8px">'
-            f'<div style="display:flex;align-items:center;gap:8px">'
-            f'<span style="font-size:11px;color:#475569;min-width:18px">{i+1}.</span>'
-            f'<div style="flex:1;background:#0d0d20;border-radius:3px;height:14px">'
-            f'<div style="width:{pct}%;background:linear-gradient(90deg,#6d28d9,#a78bfa);'
-            f'height:100%;border-radius:3px"></div></div>'
-            f'<span style="font-size:11px;color:#64748b;min-width:28px">{p["count"]}</span></div>'
-            f'<div style="font-size:11px;color:#94a3b8;margin-left:26px;margin-top:2px;'
-            f'overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:240px">'
-            f'{_e(p["title"])}</div></div>'
-        )
-    return "".join(items)
+    items = popular[:10]
+    counts = [p["count"] for p in items]
+    labels = [p["title"][:22] + ("…" if len(p["title"]) > 22 else "") for p in items]
+    colors = _PIE_COLORS[:len(items)]
+    return _pie_svg(counts, colors, labels, size=240)
 
 
 def _analytics_html(data, key):
